@@ -26,9 +26,9 @@ The system will ensure that answers are generated only from the document corpus 
 
 The first version of VaultMind will use a single-domain corpus.
 
-**Selected Corpus:** *To be finalized*
+**Selected Corpus:** Database Management Systems
 
-**Expected Size:** 100–300 pages
+**Expected Size:** 178 pages
 
 **Reason for Selection:**
 
