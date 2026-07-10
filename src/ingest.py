@@ -4,6 +4,7 @@ from collections import Counter
 from pathlib import Path
 
 import fitz
+import pdfplumber
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PDF_PATH = PROJECT_ROOT / "data" / "raw" / "Database Management Systems.pdf"
@@ -57,6 +58,67 @@ def heading_level(text: str) -> int:
     return match.group(1).count(".") + 1
 
 
+def table_to_markdown(table: list[list[str | None]]) -> str:
+    """
+    Convert a pdfplumber-extracted table (list of rows, each a list of
+    cell strings/None) into a GitHub-flavored Markdown table.
+    """
+
+    def clean_cell(cell: str | None) -> str:
+        if cell is None:
+            return ""
+        # Markdown cells can't contain raw newlines or pipes
+        return cell.replace("\n", " ").replace("|", "\\|").strip()
+
+    rows = [[clean_cell(cell) for cell in row] for row in table if row]
+
+    if not rows:
+        return ""
+
+    header, *body_rows = rows
+    col_count = len(header)
+
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join(["---"] * col_count) + " |",
+    ]
+
+    for row in body_rows:
+        # Pad/truncate rows that don't match the header column count
+        row = (row + [""] * col_count)[:col_count]
+        lines.append("| " + " | ".join(row) + " |")
+
+    return "\n".join(lines)
+
+
+def bbox_overlap_ratio(block_bbox: tuple, table_bbox: tuple) -> float:
+    """
+    Return the fraction of block_bbox's area that overlaps table_bbox.
+    Both bboxes are (x0, top, x1, bottom) in PDF point coordinates,
+    which is the shared coordinate system used by both PyMuPDF's
+    page.get_text("dict") blocks and pdfplumber's table.bbox.
+    """
+
+    bx0, btop, bx1, bbottom = block_bbox
+    tx0, ttop, tx1, tbottom = table_bbox
+
+    ix0 = max(bx0, tx0)
+    itop = max(btop, ttop)
+    ix1 = min(bx1, tx1)
+    ibottom = min(bbottom, tbottom)
+
+    if ix1 <= ix0 or ibottom <= itop:
+        return 0.0
+
+    intersection_area = (ix1 - ix0) * (ibottom - itop)
+    block_area = (bx1 - bx0) * (bbottom - btop)
+
+    if block_area <= 0:
+        return 0.0
+
+    return intersection_area / block_area
+
+
 def is_heading(span: dict, body_font_size: float) -> bool:
     """
     Decide whether a span is a heading.
@@ -85,18 +147,160 @@ def is_heading(span: dict, body_font_size: float) -> bool:
     return False
 
 
+# Minimum fraction of a text block's area that must fall inside a
+# table's bounding box before that block is treated as "part of the
+# table" and dropped from normal paragraph/heading extraction.
+TABLE_OVERLAP_THRESHOLD = 0.5
+
+# A candidate caption must sit within this many PDF points of the
+# table's top or bottom edge to be considered "immediately adjacent".
+CAPTION_MAX_GAP = 15
+
+# A candidate caption must horizontally overlap this fraction of its
+# own width with the table's horizontal span (guards against merging
+# unrelated text in an adjacent column).
+CAPTION_MIN_HORIZONTAL_OVERLAP = 0.3
+
+# Captions are short by nature ("Table 3.1: Employee records"). This
+# caps how much text can be swept up as a caption, so a full paragraph
+# that merely happens to sit close to a table isn't merged into it.
+CAPTION_MAX_LENGTH = 200
+
+
+def horizontal_overlap_ratio(bbox_a: tuple, bbox_b: tuple) -> float:
+    """
+    Fraction of bbox_a's horizontal span that overlaps bbox_b's.
+    """
+
+    ax0, _, ax1, _ = bbox_a
+    bx0, _, bx1, _ = bbox_b
+
+    ix0 = max(ax0, bx0)
+    ix1 = min(ax1, bx1)
+
+    if ix1 <= ix0:
+        return 0.0
+
+    width_a = ax1 - ax0
+
+    if width_a <= 0:
+        return 0.0
+
+    return (ix1 - ix0) / width_a
+
+
+def find_caption_index(
+    table_bbox: tuple,
+    text_candidates: list[dict],
+    consumed_indices: set,
+) -> int | None:
+    """
+    Look for a short text block immediately above or below the table
+    (within CAPTION_MAX_GAP points, with meaningful horizontal overlap)
+    and return its index in text_candidates, or None if no candidate
+    qualifies. Picks the closest qualifying candidate when more than
+    one is found.
+    """
+
+    tx0, ttop, tx1, tbottom = table_bbox
+
+    best_index = None
+    best_gap = None
+
+    for index, candidate in enumerate(text_candidates):
+
+        if index in consumed_indices:
+            continue
+
+        bbox = candidate["bbox"]
+
+        if not bbox:
+            continue
+
+        if len(candidate["text"]) > CAPTION_MAX_LENGTH:
+            continue
+
+        if horizontal_overlap_ratio(bbox, table_bbox) < CAPTION_MIN_HORIZONTAL_OVERLAP:
+            continue
+
+        _, ctop, _, cbottom = bbox
+
+        gap_above = ttop - cbottom  # candidate sits above the table
+        gap_below = ctop - tbottom  # candidate sits below the table
+
+        if 0 <= gap_above <= CAPTION_MAX_GAP:
+            gap = gap_above
+        elif 0 <= gap_below <= CAPTION_MAX_GAP:
+            gap = gap_below
+        else:
+            continue
+
+        if best_gap is None or gap < best_gap:
+            best_gap = gap
+            best_index = index
+
+    return best_index
+
+
+def extract_tables_for_page(plumber_page, page_num: int) -> list[dict]:
+    """
+    Detect tables on a single pdfplumber page and convert each one to
+    a Markdown block, keeping the table's bbox around so overlapping
+    text blocks from PyMuPDF can be filtered out later. Each table
+    also carries its bbox, page number, and table_index as metadata --
+    not used downstream yet, but preserved for future features like
+    citation highlighting.
+    """
+
+    tables = []
+
+    for table_index, table in enumerate(plumber_page.find_tables()):
+        extracted = table.extract()
+        markdown = table_to_markdown(extracted)
+
+        if not markdown:
+            continue
+
+        tables.append(
+            {
+                "bbox": table.bbox,  # (x0, top, x1, bottom)
+                "block": {
+                    "type": "table",
+                    "text": markdown,
+                    "bbox": list(table.bbox),
+                    "page": page_num,
+                    "table_index": table_index,
+                },
+            }
+        )
+
+    return tables
+
+
 def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
     pdf_path = Path(pdf_path)
     doc = fitz.open(pdf_path)
+    plumber_doc = pdfplumber.open(pdf_path)
 
     pages = []
 
-    for page_num, page in enumerate(doc, start=1):
+    for page_num, (page, plumber_page) in enumerate(
+        zip(doc, plumber_doc.pages), start=1
+    ):
 
         page_dict = page.get_text("dict")
         body_font_size = get_body_font_size(page_dict)
 
-        page_blocks = []
+        page_tables = extract_tables_for_page(plumber_page, page_num)
+        table_bboxes = [t["bbox"] for t in page_tables]
+
+        # First pass: turn every PyMuPDF block into a lightweight
+        # candidate (bbox + merged text + dominant span) without yet
+        # deciding heading/paragraph/consumed-by-table/caption. This
+        # lets us look for table captions and reorder everything by
+        # vertical position afterward, instead of only ever appending
+        # tables at the end of the page.
+        text_candidates = []
 
         for block in page_dict["blocks"]:
 
@@ -125,6 +329,59 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
             if not text:
                 continue
 
+            text_candidates.append(
+                {
+                    "bbox": block.get("bbox"),
+                    "text": text,
+                    "largest_span": largest_span,
+                }
+            )
+
+        consumed_indices = set()
+
+        # Mark candidates that mostly fall inside a table's bbox as
+        # consumed -- they're already captured by the table's own
+        # Markdown block, so keeping them as paragraphs would
+        # duplicate the table's contents.
+        for index, candidate in enumerate(text_candidates):
+            bbox = candidate["bbox"]
+
+            if bbox and any(
+                bbox_overlap_ratio(bbox, table_bbox) >= TABLE_OVERLAP_THRESHOLD
+                for table_bbox in table_bboxes
+            ):
+                consumed_indices.add(index)
+
+        # Merge captions that sit immediately above/below their table
+        # into that table's block, and mark them consumed so they
+        # don't also show up as a separate paragraph.
+        for table in page_tables:
+            caption_index = find_caption_index(
+                table["bbox"], text_candidates, consumed_indices
+            )
+
+            if caption_index is None:
+                continue
+
+            caption_text = text_candidates[caption_index]["text"]
+            table["block"]["caption"] = caption_text
+            table["block"]["text"] = caption_text + "\n\n" + table["block"]["text"]
+            consumed_indices.add(caption_index)
+
+        # Second pass: build the final heading/paragraph blocks from
+        # whatever candidates are left, then merge them with the
+        # table blocks and sort everything by vertical position so
+        # the page's original reading order is preserved -- tables no
+        # longer get pushed to the end of the page.
+        positioned_blocks = []
+
+        for index, candidate in enumerate(text_candidates):
+
+            if index in consumed_indices:
+                continue
+
+            largest_span = candidate["largest_span"]
+            text = candidate["text"]
             heading = is_heading(largest_span, body_font_size)
 
             block_data = {
@@ -137,7 +394,17 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
             if heading:
                 block_data["level"] = heading_level(text)
 
-            page_blocks.append(block_data)
+            bbox = candidate["bbox"]
+            sort_key = bbox[1] if bbox else 0
+            positioned_blocks.append((sort_key, block_data))
+
+        for table in page_tables:
+            sort_key = table["bbox"][1]
+            positioned_blocks.append((sort_key, table["block"]))
+
+        positioned_blocks.sort(key=lambda item: item[0])
+
+        page_blocks = [block for _, block in positioned_blocks]
 
         pages.append(
             {
@@ -148,6 +415,7 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
         )
 
     doc.close()
+    plumber_doc.close()
     return pages
 
 
