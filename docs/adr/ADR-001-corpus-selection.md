@@ -1,9 +1,5 @@
 # ADR 1: Corpus Selection for VaultMind
 
-## Status
-
-Accepted
-
 ## Context
 
 VaultMind is a Retrieval-Augmented Generation (RAG) system designed to answer questions from a domain-specific corpus while providing grounded citations.

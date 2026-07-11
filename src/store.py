@@ -38,7 +38,8 @@ def store_chunks(
         metadatas=[
             {
                 "chunk_id": chunk["chunk_id"],
-                "page_number": chunk["page_number"],
+                "start_page": chunk["start_page"],
+                "end_page": chunk["end_page"],
                 "source_doc": chunk["source_doc"],
                 "section_title": chunk["section_title"],
                 "heading_level": chunk["heading_level"],

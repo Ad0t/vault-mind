@@ -10,60 +10,128 @@ PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 CHUNKS_PATH = PROCESSED_DIR / "chunks.json"
 
 
+def _section_title(heading: str, found_heading: bool, start_page: int, end_page: int) -> str:
+    if found_heading:
+        return heading
+
+    if start_page == end_page:
+        return f"Page {start_page}"
+
+    return f"Pages {start_page}-{end_page}"
+
+
 def build_sections(pages: list[dict]) -> list[dict]:
     """
     First pass:
-    Structurally split pages into sections based on headings.
+    Structurally split the document into sections based on headings.
 
-    If a page has no headings, the entire page becomes one section.
+    Unlike a per-page split, a section now spans pages: once a heading
+    is encountered, everything that follows (paragraphs, across as many
+    pages as needed) belongs to that section until the *next* heading
+    is encountered -- not until the page ends. A page with no heading
+    on it simply continues the previous section.
+
+    Tables are never merged into surrounding paragraph text. Each table
+    becomes its own standalone section element, positioned between
+    whatever text came before and after it.
     """
 
     sections = []
 
+    current_heading = "Untitled"
+    current_level = 0
+    current_text: list[str] = []
+    current_start_page = None
+    current_end_page = None
+    found_heading = False
+
+    def flush_text_section(source_doc: str) -> None:
+        if not current_text:
+            return
+
+        sections.append(
+            {
+                "type": "text",
+                "start_page": current_start_page,
+                "end_page": current_end_page,
+                "source_doc": source_doc,
+                "section_title": _section_title(
+                    current_heading, found_heading, current_start_page, current_end_page
+                ),
+                "heading_level": current_level,
+                "text": "\n".join(current_text).strip(),
+                # Table-only metadata -- kept as None here so every
+                # section shares the same schema, whether or not it's
+                # a table.
+                "bbox": None,
+                "table_index": None,
+                "caption": None,
+            }
+        )
+
+    source_doc_last = None
+
     for page in pages:
 
-        current_heading = "Untitled"
-        current_level = 0
-        current_text = []
-
-        found_heading = False
+        page_num = page["page"]
+        source_doc = page["source_doc"]
+        source_doc_last = source_doc
 
         for block in page["blocks"]:
 
             if block["type"] == "heading":
 
+                # Save whatever paragraph text was accumulated under
+                # the previous heading before starting the new one.
+                flush_text_section(source_doc)
+                current_text = []
+                current_start_page = None
+                current_end_page = None
+
                 found_heading = True
-
-                # Save previous section
-                if current_text:
-                    sections.append(
-                        {
-                            "page_number": page["page"],
-                            "source_doc": page["source_doc"],
-                            "section_title": current_heading,
-                            "heading_level": current_level,
-                            "text": "\n".join(current_text).strip(),
-                        }
-                    )
-
                 current_heading = block["text"]
                 current_level = block.get("level", 1)
-                current_text = []
 
-            else:
+            elif block["type"] == "table":
+
+                # Flush accumulated paragraph text first so the table
+                # lands in the correct position in the section order,
+                # then emit the table as its own section element.
+                flush_text_section(source_doc)
+                current_text = []
+                current_start_page = None
+                current_end_page = None
+
+                sections.append(
+                    {
+                        "type": "table",
+                        "start_page": page_num,
+                        "end_page": page_num,
+                        "source_doc": source_doc,
+                        "section_title": current_heading if found_heading else f"Page {page_num}",
+                        "heading_level": current_level,
+                        "text": block["text"],
+                        # Not used downstream yet, but preserved for
+                        # future features (e.g. citation highlighting
+                        # back to the original table on the page).
+                        "bbox": block.get("bbox"),
+                        "table_index": block.get("table_index"),
+                        "caption": block.get("caption"),
+                    }
+                )
+
+            else:  # paragraph
+
+                if current_start_page is None:
+                    current_start_page = page_num
+
+                current_end_page = page_num
                 current_text.append(block["text"])
 
-        # Save last section
-        if current_text:
-            sections.append(
-                {
-                    "page_number": page["page"],
-                    "source_doc": page["source_doc"],
-                    "section_title": current_heading if found_heading else f"Page {page['page']}",
-                    "heading_level": current_level,
-                    "text": "\n".join(current_text).strip(),
-                }
-            )
+    # Save trailing section, if any text is still pending after the
+    # last page. Guarded so an empty `pages` list is a no-op.
+    if source_doc_last is not None:
+        flush_text_section(source_doc_last)
 
     return sections
 
@@ -76,6 +144,11 @@ def chunk_sections(
     """
     Second pass:
     Semantically split each section into overlapping chunks.
+
+    Table sections are the exception: splitting a Markdown table would
+    break its row/column structure, so a table section is always kept
+    as a single, unsplit chunk. Text sections go through the normal
+    recursive splitter as before.
     """
 
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
@@ -88,19 +161,27 @@ def chunk_sections(
 
     for section in sections:
 
-        split_chunks = splitter.split_text(section["text"])
+        if section["type"] == "table":
+            split_chunks = [section["text"]]
+        else:
+            split_chunks = splitter.split_text(section["text"])
 
         for index, chunk_text in enumerate(split_chunks):
 
             chunks.append(
                 {
                     "chunk_id": f"chunk_{chunk_id:05d}",
-                    "page_number": section["page_number"],
+                    "type": section["type"],
+                    "start_page": section["start_page"],
+                    "end_page": section["end_page"],
                     "source_doc": section["source_doc"],
                     "section_title": section["section_title"],
                     "heading_level": section["heading_level"],
                     "chunk_index": index,
                     "text": chunk_text,
+                    "bbox": section.get("bbox"),
+                    "table_index": section.get("table_index"),
+                    "caption": section.get("caption"),
                 }
             )
 
