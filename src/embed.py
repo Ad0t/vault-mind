@@ -12,6 +12,9 @@ MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 
 def generate_embeddings(chunks: list[dict], model_name: str = MODEL_NAME) -> np.ndarray:
+    if not chunks:
+        raise ValueError("No chunks available to embed.")
+
     model = SentenceTransformer(model_name)
     texts = [chunk["text"] for chunk in chunks]
 
@@ -19,6 +22,8 @@ def generate_embeddings(chunks: list[dict], model_name: str = MODEL_NAME) -> np.
         texts,
         convert_to_numpy=True,
         show_progress_bar=True,
+        batch_size=32,
+        normalize_embeddings=True,
     )
     return embeddings
 
