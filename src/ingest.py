@@ -119,6 +119,16 @@ def bbox_overlap_ratio(block_bbox: tuple, table_bbox: tuple) -> float:
     return intersection_area / block_area
 
 
+# Real headings in this document are short, standalone titles. Bold text
+# that trails into a colon/comma/semicolon (e.g. "Elimination of Data
+# Redundancy: One of the main features...") is an inline bold lead-in
+# phrase inside a paragraph, not a section heading -- letting it through
+# fragments running prose into bogus one-off "headings". Cap length too,
+# since a genuine heading rarely runs this long.
+MAX_HEADING_LENGTH = 80
+HEADING_TRAILING_PUNCTUATION = (":", ",", ";")
+
+
 def is_heading(span: dict, body_font_size: float) -> bool:
     """
     Decide whether a span is a heading.
@@ -132,17 +142,24 @@ def is_heading(span: dict, body_font_size: float) -> bool:
     font = span["font"].lower()
     size = span["size"]
 
-    # Larger than normal text
+    # Larger than normal text -- the strongest, least ambiguous signal.
     if size >= body_font_size + 2:
         return True
 
-    # Bold text
-    if "bold" in font:
-        return True
-
-    # Numbered heading
+    # Numbered heading (e.g. "3.2 Functional Dependencies") -- reliable
+    # regardless of font, since running body text doesn't start this way.
     if HEADING_PATTERN.match(text):
         return True
+
+    # Bold text can be a real heading, but bold is also used for inline
+    # emphasis / lead-in phrases inside a paragraph. Only trust bold on
+    # its own when the span reads like a standalone title: short, and
+    # not trailing into the rest of a sentence.
+    if "bold" in font:
+        if len(text) <= MAX_HEADING_LENGTH and not text.endswith(
+            HEADING_TRAILING_PUNCTUATION
+        ):
+            return True
 
     return False
 
@@ -294,12 +311,14 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
         page_tables = extract_tables_for_page(plumber_page, page_num)
         table_bboxes = [t["bbox"] for t in page_tables]
 
-        # First pass: turn every PyMuPDF block into a lightweight
-        # candidate (bbox + merged text + dominant span) without yet
-        # deciding heading/paragraph/consumed-by-table/caption. This
-        # lets us look for table captions and reorder everything by
-        # vertical position afterward, instead of only ever appending
-        # tables at the end of the page.
+        # First pass: turn each PyMuPDF block into one or more lightweight
+        # candidates (bbox + merged text + dominant span). We classify at
+        # the *line* level and only merge consecutive lines that share the
+        # same heading/paragraph classification -- a PyMuPDF block can
+        # contain a heading line immediately followed by body text (no
+        # blank line between them), and concatenating the whole block's
+        # text unconditionally used to swallow that body text into the
+        # heading (or vice versa), losing it entirely as a paragraph.
         text_candidates = []
 
         for block in page_dict["blocks"]:
@@ -307,35 +326,88 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
             if "lines" not in block:
                 continue
 
-            text_parts = []
-            largest_span = None
+            line_records = []
 
             for line in block["lines"]:
+
+                line_text_parts = []
+                line_largest_span = None
+
                 for span in line["spans"]:
+                    span_text = span["text"]
 
-                    text = span["text"]
-
-                    if text.strip():
-                        text_parts.append(text)
+                    if span_text.strip():
+                        line_text_parts.append(span_text)
 
                         if (
-                            largest_span is None
-                            or span["size"] > largest_span["size"]
+                            line_largest_span is None
+                            or span["size"] > line_largest_span["size"]
                         ):
-                            largest_span = span
+                            line_largest_span = span
 
-            text = "".join(text_parts).strip()
+                line_text = "".join(line_text_parts).strip()
 
-            if not text:
-                continue
+                if not line_text or line_largest_span is None:
+                    continue
 
-            text_candidates.append(
-                {
-                    "bbox": block.get("bbox"),
-                    "text": text,
-                    "largest_span": largest_span,
-                }
-            )
+                line_records.append(
+                    {
+                        "bbox": line.get("bbox"),
+                        "text": line_text,
+                        "largest_span": line_largest_span,
+                        "is_heading": is_heading(line_largest_span, body_font_size),
+                    }
+                )
+
+            def flush_group(group: dict | None) -> None:
+                if group is None:
+                    return
+
+                text_candidates.append(
+                    {
+                        "bbox": group["bbox"],
+                        "text": " ".join(group["text_parts"]).strip(),
+                        "largest_span": group["largest_span"],
+                    }
+                )
+
+            current_group = None
+
+            for record in line_records:
+
+                if (
+                    current_group is not None
+                    and current_group["is_heading"] == record["is_heading"]
+                ):
+                    current_group["text_parts"].append(record["text"])
+
+                    if record["largest_span"]["size"] > current_group["largest_span"]["size"]:
+                        current_group["largest_span"] = record["largest_span"]
+
+                    bbox_a = current_group["bbox"]
+                    bbox_b = record["bbox"]
+
+                    if bbox_a and bbox_b:
+                        current_group["bbox"] = (
+                            min(bbox_a[0], bbox_b[0]),
+                            min(bbox_a[1], bbox_b[1]),
+                            max(bbox_a[2], bbox_b[2]),
+                            max(bbox_a[3], bbox_b[3]),
+                        )
+                    elif bbox_b:
+                        current_group["bbox"] = bbox_b
+
+                else:
+                    flush_group(current_group)
+
+                    current_group = {
+                        "is_heading": record["is_heading"],
+                        "text_parts": [record["text"]],
+                        "largest_span": record["largest_span"],
+                        "bbox": record["bbox"],
+                    }
+
+            flush_group(current_group)
 
         consumed_indices = set()
 
