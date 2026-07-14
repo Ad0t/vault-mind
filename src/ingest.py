@@ -119,19 +119,21 @@ def bbox_overlap_ratio(block_bbox: tuple, table_bbox: tuple) -> float:
     return intersection_area / block_area
 
 
-# Real headings in this document are short, standalone titles. Bold text
-# that trails into a colon/comma/semicolon (e.g. "Elimination of Data
-# Redundancy: One of the main features...") is an inline bold lead-in
-# phrase inside a paragraph, not a section heading -- letting it through
-# fragments running prose into bogus one-off "headings". Cap length too,
-# since a genuine heading rarely runs this long.
-MAX_HEADING_LENGTH = 80
-HEADING_TRAILING_PUNCTUATION = (":", ",", ";")
-
-
+# A single bold *span* is not enough to tell a real heading (its own,
+# isolated line -- e.g. "The features of database normalization are as
+# follows:") apart from an inline bold lead-in phrase inside a paragraph
+# (e.g. "Elimination of Data Redundancy: " followed on the very same
+# line by plain continuation text "One of the main features of ...").
+# Both patterns are bold and can end in a colon, so span-level checks
+# alone can't distinguish them -- checking the *whole line* can: a real
+# standalone heading has nothing but heading-styled spans on its line;
+# a lead-in phrase shares its line with plain body text.
 def is_heading(span: dict, body_font_size: float) -> bool:
     """
-    Decide whether a span is a heading.
+    Decide whether a single span, in isolation, looks heading-styled
+    (large font, numbered prefix, or bold). This is a per-span signal
+    only -- see `line_is_heading` for the whole-line decision that
+    actually classifies a line as a heading or not.
     """
 
     text = span["text"].strip()
@@ -151,17 +153,34 @@ def is_heading(span: dict, body_font_size: float) -> bool:
     if HEADING_PATTERN.match(text):
         return True
 
-    # Bold text can be a real heading, but bold is also used for inline
-    # emphasis / lead-in phrases inside a paragraph. Only trust bold on
-    # its own when the span reads like a standalone title: short, and
-    # not trailing into the rest of a sentence.
+    # Bold on its own is ambiguous (see module note above) -- handled by
+    # line_is_heading, not decided here.
     if "bold" in font:
-        if len(text) <= MAX_HEADING_LENGTH and not text.endswith(
-            HEADING_TRAILING_PUNCTUATION
-        ):
-            return True
+        return True
 
     return False
+
+
+def line_is_heading(spans: list[dict], body_font_size: float) -> bool:
+    """
+    A line is a heading only if *every* non-empty span on it is
+    heading-styled. A line that mixes a bold lead-in phrase with plain
+    continuation text (a span that fails the check) is running body
+    prose, not a section heading, even though part of it is bold.
+    """
+
+    signals = [
+        is_heading(span, body_font_size)
+        for span in spans
+        if span["text"].strip()
+    ]
+
+    if not signals:
+        return False
+
+    return all(signals)
+
+
 
 
 # Minimum fraction of a text block's area that must fall inside a
@@ -355,7 +374,7 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
                         "bbox": line.get("bbox"),
                         "text": line_text,
                         "largest_span": line_largest_span,
-                        "is_heading": is_heading(line_largest_span, body_font_size),
+                        "is_heading": line_is_heading(line["spans"], body_font_size),
                     }
                 )
 
@@ -368,6 +387,7 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
                         "bbox": group["bbox"],
                         "text": " ".join(group["text_parts"]).strip(),
                         "largest_span": group["largest_span"],
+                        "is_heading": group["is_heading"],
                     }
                 )
 
@@ -454,7 +474,7 @@ def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
 
             largest_span = candidate["largest_span"]
             text = candidate["text"]
-            heading = is_heading(largest_span, body_font_size)
+            heading = candidate["is_heading"]
 
             block_data = {
                 "type": "heading" if heading else "paragraph",

@@ -57,7 +57,8 @@ if __name__ == "__main__":
     embeddings = load_embeddings(EMBEDDINGS_PATH)
 
     collection = store_chunks(chunks, embeddings)
-
+    print("Collection count:", collection.count())
+    print(len(chunks))
     print(f"Stored {collection.count()} chunks in ChromaDB.")
     print(f"Collection name: {COLLECTION_NAME}")
     print(f"Database location: {CHROMA_PATH}")
