@@ -1,8 +1,5 @@
 # ADR-002: Hybrid Retrieval over Dense-Only Retrieval
 
-## Status
-
-Accepted
 
 ## Context
 
