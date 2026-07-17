@@ -374,6 +374,61 @@ def generate(
     return answer + "\n" + citations
 
 
+def generate_structured(
+    query: str,
+    chunks: list[dict],
+    backend: str | None = None,
+    min_chars: int = _MIN_CHUNK_CHARS,
+) -> dict:
+    """
+    Like generate() but returns a structured dict instead of a formatted string.
+
+    Used by the Streamlit UI so it can render citations as interactive
+    expandable blocks rather than a flat text append.
+
+    Returns
+    -------
+    {
+        "answer"         : str | None   — LLM response text (None on error)
+        "context_chunks" : list[dict]   — cleaned/deduped chunks used in prompt
+        "error"          : str | None   — human-readable error message, or None
+    }
+    """
+    if backend is None:
+        backend = os.environ.get("VAULTMIND_LLM_BACKEND", "groq").lower()
+
+    if backend not in _BACKENDS:
+        return {
+            "answer": None,
+            "context_chunks": [],
+            "error": f"Unknown backend {backend!r}. Choose from: {list(_BACKENDS)}",
+        }
+
+    context, kept_chunks = build_context(chunks, min_chars=min_chars)
+
+    if not kept_chunks:
+        return {
+            "answer": None,
+            "context_chunks": [],
+            "error": "No usable context found after filtering short/duplicate chunks.",
+        }
+
+    try:
+        answer = _BACKENDS[backend](query, context)
+        return {
+            "answer": answer,
+            "context_chunks": kept_chunks,
+            "error": None,
+        }
+    except (ImportError, EnvironmentError, Exception) as exc:
+        return {
+            "answer": None,
+            "context_chunks": kept_chunks,
+            "error": str(exc),
+        }
+
+
+
 # ---------------------------------------------------------------------------
 # CLI (standalone usage)
 # ---------------------------------------------------------------------------

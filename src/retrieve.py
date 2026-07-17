@@ -252,7 +252,8 @@ def retrieve(
     top_k: int = 5,
     metadata_filter: dict | None = None,
     rerank_pool_size: int | None = None,
-):
+    source_filter: list[str] | None = None,
+) -> list[dict]:
     """
     Run hybrid BM25 + dense retrieval fused with RRF.
 
@@ -262,9 +263,29 @@ def retrieve(
                       the reranker needs a wider candidate pool to choose from
                       so it can surface the correct definitional chunk even if
                       RRF ranked it outside the default top-k.
+
+    source_filter: optional list of source_doc filenames (e.g. ["DBMS.pdf"]).
+                   When set, both the BM25 corpus and the ChromaDB dense
+                   search are restricted to chunks from those sources only.
+                   Supports selecting/deselecting PDFs in the UI without
+                   re-embedding anything.
     """
 
     chunks = load_chunks(CHUNKS_PATH)
+
+    # Apply source filter to BM25 corpus (operates on local chunks list)
+    if source_filter:
+        chunks = [c for c in chunks if c.get("source_doc") in source_filter]
+
+        # Build the ChromaDB where clause for dense search
+        # Use $in for multiple sources; equality for a single source
+        # (ChromaDB supports both but $in is consistent either way)
+        if metadata_filter is None:
+            metadata_filter = (
+                {"source_doc": {"$in": list(source_filter)}}
+                if len(source_filter) > 1
+                else {"source_doc": source_filter[0]}
+            )
 
     # metadata_filter is only forwarded to dense_search(). BM25 operates
     # over the local in-memory chunk corpus (not Chroma), so metadata
@@ -293,6 +314,73 @@ def retrieve(
     # Return a wider pool when the caller will rerank, otherwise cut at top_k.
     n = rerank_pool_size if rerank_pool_size is not None else top_k
     return fused[:n]
+
+
+
+def retrieve_per_source(
+    query: str,
+    top_k: int = 5,
+    candidates_per_source: int = 5,
+    rerank_pool_size_per_source: int = 20,
+    active_sources: list[str] | None = None,
+) -> list[dict]:
+    """
+    Run BM25 + dense + RRF retrieval independently for each source PDF,
+    then merge all candidate pools into one list for global reranking.
+
+    Why this matters
+    ----------------
+    When multiple PDFs are loaded, a large document can monopolise every
+    top-k slot because it contributes proportionally more chunks to both
+    the BM25 corpus and the ChromaDB index.  Per-source retrieval fixes
+    this by giving every PDF an equal share of the candidate pool before
+    the cross-encoder reranker decides the final ordering.
+
+    Parameters
+    ----------
+    query                       : the user's question
+    top_k                       : desired final result count (passed to
+                                  rerank() by the caller — not applied here)
+    candidates_per_source       : candidates collected from each PDF
+    rerank_pool_size_per_source : RRF pool size for each per-source search
+    active_sources              : restrict to these source_doc names only;
+                                  None means use all sources in chunks.json
+    """
+    chunks  = load_chunks(CHUNKS_PATH)
+    sources = sorted({c.get("source_doc", "") for c in chunks} - {""})
+
+    # Honour the active-source filter from the UI
+    if active_sources:
+        sources = [s for s in sources if s in active_sources]
+
+    if not sources:
+        return []
+
+    # Single source — plain retrieve is equivalent and cheaper
+    if len(sources) == 1:
+        return retrieve(
+            query,
+            top_k=top_k,
+            rerank_pool_size=rerank_pool_size_per_source,
+            source_filter=sources,
+        )
+
+    merged:   list[dict] = []
+    seen_ids: set[str]   = set()
+
+    for source in sources:
+        per_source = retrieve(
+            query,
+            top_k=candidates_per_source,
+            rerank_pool_size=rerank_pool_size_per_source,
+            source_filter=[source],
+        )
+        for chunk in per_source:
+            if chunk["id"] not in seen_ids:
+                seen_ids.add(chunk["id"])
+                merged.append(chunk)
+
+    return merged
 
 
 # -------------------------
@@ -332,6 +420,7 @@ def print_results(results, query, preview_chars: int | None = None):
         )
         print(f"Page          : {page_label}")
         print(f"Section       : {meta['section_title']}")
+        print(f"Source        : {meta['source_doc']}")
         print(f"RRF Score     : {result['rrf_score']:.5f}")
         if "rerank_score" in result:
             print(f"Rerank Score  : {result['rerank_score']:.4f}")

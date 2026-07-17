@@ -7,9 +7,22 @@ import fitz
 import pdfplumber
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PDF_PATH = PROJECT_ROOT / "data" / "raw" / "Database Management Systems.pdf"
+RAW_DIR       = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-PAGES_PATH = PROCESSED_DIR / "pages.json"
+PAGES_PATH    = PROCESSED_DIR / "pages.json"
+
+# Fallback used only when extract_pages() is called without an argument
+# (e.g. from the ingest.py __main__ block). In normal usage pipeline.py
+# passes an explicit path obtained by scanning data/raw/.
+def _default_pdf() -> Path:
+    pdfs = sorted(RAW_DIR.glob("*.pdf"))
+    if not pdfs:
+        raise FileNotFoundError(
+            f"No PDF files found in {RAW_DIR}. "
+            "Place at least one PDF there before running."
+        )
+    return pdfs[0]
+
 
 # Matches headings like:
 # 1
@@ -313,7 +326,9 @@ def extract_tables_for_page(plumber_page, page_num: int) -> list[dict]:
     return tables
 
 
-def extract_pages(pdf_path: str | Path = PDF_PATH) -> list[dict]:
+def extract_pages(pdf_path: str | Path | None = None) -> list[dict]:
+    if pdf_path is None:
+        pdf_path = _default_pdf()
     pdf_path = Path(pdf_path)
     doc = fitz.open(pdf_path)
     plumber_doc = pdfplumber.open(pdf_path)
