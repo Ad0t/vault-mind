@@ -326,6 +326,63 @@ def extract_tables_for_page(plumber_page, page_num: int) -> list[dict]:
     return tables
 
 
+def _has_spacing_issue(text: str) -> bool:
+    """
+    Heuristic: if the average whitespace-separated token is very long,
+    spaces within the text are likely missing (common in PDFs that encode
+    glyph advances without explicit space characters).
+
+    Average English word ≈ 5 chars. Tokens > 12 chars on average strongly
+    suggest that words have been concatenated: 'Whatisatransaction?' etc.
+    """
+    tokens = text.split()
+    if not tokens:
+        return False
+
+    # Signal 1 — any single token longer than 20 chars without a hyphen
+    # catches fully concatenated lines: 'Exercise16.1Givebriefanswers...'
+    if any(len(t) > 20 and "-" not in t for t in tokens):
+        return True
+
+    # Signal 2 — average token length > 10 with at least 2 tokens
+    # catches runs of medium-length concatenated words
+    if len(tokens) >= 2:
+        avg = sum(len(t) for t in tokens) / len(tokens)
+        if avg > 10.0:
+            return True
+
+    # Signal 3 — very low space density relative to text length
+    # normal English ≈ 1 space per 5 chars; < 1 per 20 chars is suspicious
+    stripped = text.strip()
+    if len(stripped) > 30 and stripped.count(" ") / len(stripped) < 0.05:
+        return True
+
+    return False
+
+
+def _plumber_text_for_bbox(
+    bbox: tuple, plumber_page, pad: float = 2.0
+) -> str | None:
+    """
+    Re-extract text for a bounding box using pdfplumber, which infers
+    word boundaries from character x-positions and therefore handles PDFs
+    that lack explicit space characters far better than PyMuPDF.
+
+    Returns None if extraction fails or yields no text.
+    """
+    try:
+        x0, y0, x1, y1 = bbox
+        cropped = plumber_page.within_bbox(
+            (max(0, x0 - pad), max(0, y0 - pad), x1 + pad, y1 + pad),
+            relative=False,
+        )
+        text = cropped.extract_text(x_tolerance=3, y_tolerance=3)
+        return text.strip() if text and text.strip() else None
+    except Exception:
+        return None
+
+
+
 def extract_pages(pdf_path: str | Path | None = None) -> list[dict]:
     if pdf_path is None:
         pdf_path = _default_pdf()
@@ -489,6 +546,16 @@ def extract_pages(pdf_path: str | Path | None = None) -> list[dict]:
 
             largest_span = candidate["largest_span"]
             text = candidate["text"]
+
+            # If fitz-extracted text has missing spaces (common in some PDFs
+            # that encode glyph advances without explicit space characters),
+            # re-extract the same region with pdfplumber which uses character
+            # x-positions to infer word boundaries.
+            if _has_spacing_issue(text) and candidate.get("bbox"):
+                plumber_text = _plumber_text_for_bbox(candidate["bbox"], plumber_page)
+                if plumber_text:
+                    text = plumber_text
+
             heading = candidate["is_heading"]
 
             block_data = {
@@ -561,8 +628,7 @@ def load_pages(
 
 
 if __name__ == "__main__":
-
-    pages = extract_pages(PDF_PATH)
+    pages = extract_pages()  # scans data/raw/ for the first PDF
 
     save_pages(pages, PAGES_PATH)
 

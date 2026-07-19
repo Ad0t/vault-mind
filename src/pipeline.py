@@ -239,6 +239,29 @@ def run_pipeline(
             "  (see .env for all supported backends)"
         )
 
+    # ----------------------------------------------------------------------
+    # Optional: per-source comparison
+    # ----------------------------------------------------------------------
+    from collections import Counter
+    sources_in_results = set(
+        c["metadata"]["source_doc"] for c in reranked
+    )
+
+    if len(sources_in_results) >= 2:
+        print(f"\n  {len(sources_in_results)} sources in results: "
+              + ", ".join(sorted(sources_in_results)))
+        try:
+            choice = input("\nCompare results per PDF? [y/N]: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            choice = "n"
+
+        if choice in ("y", "yes"):
+            from compare import compare_sources
+            compare_sources(query, reranked, backend=backend)
+    else:
+        # Only one source — nothing to compare
+        pass
+
 
 # ---------------------------------------------------------------------------
 # CLI
