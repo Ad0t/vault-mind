@@ -12,12 +12,34 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
-      - name: Push to Hugging Face Hub
+      - name: Deploy to Hugging Face Spaces (source files only)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://4d0T:$HF_TOKEN@huggingface.co/spaces/4d0T/vault-mind
-          git push hf main --force
+          # Clone the existing HF Space so we preserve its git history
+          git clone https://4d0T:$HF_TOKEN@huggingface.co/spaces/4d0T/vault-mind /tmp/hf-space
 
+          # Sync source code only — exclude binary/runtime directories
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='docs' \
+            --exclude='data' \
+            --exclude='vector_store' \
+            --exclude='__pycache__' \
+            --exclude='*.pdf' \
+            --exclude='*.npy' \
+            --exclude='*.db' \
+            --exclude='.venv' \
+            --exclude='*.pyc' \
+            ./ /tmp/hf-space/
+
+          cd /tmp/hf-space
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add -A
+
+          # Only commit if there are actual changes
+          git diff --staged --quiet || git commit -m "Sync from GitHub ${{ github.sha }}"
+          git push
