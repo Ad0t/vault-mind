@@ -1,3 +1,14 @@
+---
+title: VaultMind
+emoji: 🧠
+colorFrom: violet
+colorTo: indigo
+sdk: gradio
+sdk_version: 6.20.0
+app_file: app.py
+pinned: false
+---
+
 # VaultMind 🧠📚
 
 **An End-to-End Hybrid RAG System with Citation Grounding, Multi-Source Comparison & Section-Aware Document Processing.**

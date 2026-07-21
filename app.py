@@ -802,11 +802,12 @@ with gr.Blocks(title="VaultMind") as demo:
 # ── Launch ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    is_spaces = os.getenv("SPACE_ID") is not None
     demo.launch(
-        server_name="0.0.0.0",
-        server_port=None,
+        server_name="0.0.0.0" if is_spaces else None,
+        server_port=7860 if is_spaces else None,
         share=False,
-        inbrowser=True,
+        inbrowser=not is_spaces,
         theme=gr.themes.Soft(
             primary_hue="violet",
             secondary_hue="indigo",
@@ -815,3 +816,4 @@ if __name__ == "__main__":
         ),
         css=CSS,
     )
+
