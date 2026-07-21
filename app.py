@@ -3,7 +3,11 @@ app.py — VaultMind Gradio UI
 
 Two-screen flow:
   Screen 1 (Upload)  — drop one or more PDFs → "Process & Chat" button
-  Screen 2 (Chat)    — chatbot with a source selector to toggle active PDFs
+  Screen 2 (Chat)    — chatbot with a source selector (check/uncheck per PDF);
+                        a "Compare Sources" button appears automatically when
+                        the last query retrieved relevant content from 2+ PDFs.
+                        Clicking it generates a side-by-side HTML table with
+                        per-PDF answers, pages, sections, and confidence scores.
 
 Run with:
     python app.py
@@ -13,6 +17,7 @@ import json
 import os
 import shutil
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 # ── Path & env setup ──────────────────────────────────────────────────────────
@@ -51,14 +56,10 @@ CSS = """
 
 /* ── Upload screen ── */
 .upload-card {
-    max-width: 560px;
-    margin: 2rem auto;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 16px;
-    padding: 2rem;
+    max-width:560px; margin:2rem auto;
+    background:#1e293b; border:1px solid #334155;
+    border-radius:16px; padding:2rem;
 }
-.upload-hint { color:#94a3b8; font-size:0.85rem; text-align:center; margin-top:0.5rem; }
 
 /* ── Confidence badges ── */
 .badge {
@@ -92,12 +93,48 @@ details[open] summary::before { content:'▼ '; }
 /* ── Chatbot ── */
 #chatbot { min-height:460px; }
 
-/* ── Buttons ── */
+/* ── Primary buttons ── */
 #process-btn, #send-btn {
     background:linear-gradient(135deg,#6366f1,#8b5cf6) !important;
     color:white !important; border:none !important;
     border-radius:8px !important; font-weight:600 !important;
 }
+
+/* ── Compare button ── */
+#compare-btn {
+    background:linear-gradient(135deg,#0f172a,#1e293b) !important;
+    border:1px solid #6366f1 !important;
+    color:#a5b4fc !important; border-radius:8px !important;
+    font-weight:600 !important; transition:all 0.2s ease !important;
+    white-space:nowrap !important;
+}
+#compare-btn:hover {
+    background:linear-gradient(135deg,#1e293b,#334155) !important;
+    border-color:#818cf8 !important; color:#c4b5fd !important;
+}
+
+/* ── Comparison table ── */
+.compare-wrap { margin:0.6rem 0 1rem 0; }
+.compare-table {
+    width:100%; border-collapse:collapse; font-size:0.84rem;
+    border:1px solid #334155; border-radius:8px; overflow:hidden;
+}
+.compare-table th {
+    background:#1e293b; color:#a5b4fc; font-weight:600;
+    padding:0.65rem 0.9rem; text-align:left;
+    border-bottom:2px solid #6366f1;
+}
+.compare-table td {
+    padding:0.65rem 0.9rem; border-bottom:1px solid #334155;
+    vertical-align:top; color:#cbd5e1; line-height:1.6;
+}
+.compare-table td:first-child {
+    font-weight:600; color:#94a3b8; white-space:nowrap;
+    background:rgba(30,41,59,0.6);
+}
+.compare-table tbody tr:last-child td { border-bottom:none; }
+.compare-table tbody tr:hover td { background:rgba(99,102,241,0.06); }
+.compare-table tbody tr:hover td:first-child { background:rgba(30,41,59,0.9); }
 """
 
 
@@ -125,7 +162,10 @@ def process_pdfs(file_objs) -> tuple[str, list[str]]:
     """
     Ingest, chunk, embed, and upsert one or more uploaded PDF files.
 
-    Returns (status_message, list_of_all_source_names).
+    Returns (status_message, list_of_just_processed_source_names).
+    Only the PDFs processed in this call are returned — previously
+    processed PDFs sitting in chunks.json are intentionally excluded
+    so the UI only shows what the user uploaded in this session.
     """
     from ingest import extract_pages
     from chunk import build_sections, chunk_sections
@@ -144,26 +184,22 @@ def process_pdfs(file_objs) -> tuple[str, list[str]]:
         shutil.copy(src_path, dest)
 
         try:
-            # ── Ingest ──────────────────────────────────────────────────────
-            pages = extract_pages(dest)
-
-            # ── Chunk ───────────────────────────────────────────────────────
+            pages      = extract_pages(dest)
             sections   = build_sections(pages)
             new_chunks = chunk_sections(sections)
 
-            # ── Merge with existing chunks.json (upsert by source) ──────────
             existing = _load_all_chunks()
             source   = dest.name
-            # Remove old chunks for this source (handles re-upload)
             existing = [c for c in existing if c.get("source_doc") != source]
             merged   = existing + new_chunks
             _save_chunks(merged)
 
-            # ── Embed + upsert into ChromaDB ─────────────────────────────
-            import numpy as np
             embeddings = generate_embeddings(new_chunks)
+            # Remove stale ChromaDB entries for this source before upserting
+            # so re-uploaded PDFs never leave orphaned old chunks behind.
+            from store import delete_source
+            delete_source(source)
             upsert_chunks(new_chunks, embeddings)
-
             processed.append(dest.name)
 
         except Exception as exc:
@@ -179,10 +215,11 @@ def process_pdfs(file_objs) -> tuple[str, list[str]]:
     else:
         msg = f"✅ Ready — {len(processed)} PDF(s) processed: {', '.join(processed)}"
 
-    return msg, all_sources
+    # Return only the PDFs processed this call, not all historical sources.
+    return msg, processed
 
 
-# ── Chat helpers ───────────────────────────────────────────────────────────────
+# ── Chat formatting helpers ────────────────────────────────────────────────────
 
 def _page_label(meta: dict) -> str:
     s, e = meta["start_page"], meta["end_page"]
@@ -252,7 +289,181 @@ def _format_response(result: dict) -> str:
     return f"{answer}\n\n{badge}\n\n{cites}"
 
 
-def run_query(query: str, active_sources: list[str], top_k: int, rerank_pool: int) -> dict:
+def _safe(text: str) -> str:
+    return (
+        str(text)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+# ── Compare helpers ────────────────────────────────────────────────────────────
+
+def _compare_per_source(
+    query: str,
+    reranked: list[dict],
+    top_k_per_source: int = 3,
+    backend=None,
+) -> dict[str, dict]:
+    """
+    For each source present in the reranked pool, generate a standalone
+    answer using only that source's chunks.
+
+    Returns:
+        { source_doc: {
+            "blocked": bool,
+            "reason":  str          (only when blocked),
+            "answer":  str,
+            "chunks":  list[dict],
+            "score":   float | None,
+          }
+        }
+    """
+    from guardrails import run_guardrails
+    from generate import generate_structured
+
+    by_source: dict[str, list[dict]] = defaultdict(list)
+    for chunk in reranked:
+        src = chunk.get("metadata", {}).get("source_doc", "unknown")
+        by_source[src].append(chunk)
+
+    results: dict[str, dict] = {}
+
+    for source, chunks in by_source.items():
+        top_chunks = chunks[:top_k_per_source]
+
+        guard = run_guardrails(query, top_chunks)
+        if not guard.allowed:
+            results[source] = {
+                "blocked": True,
+                "reason":  guard.reason,
+                "chunks":  top_chunks,
+                "score":   top_chunks[0].get("rerank_score") if top_chunks else None,
+            }
+            continue
+
+        try:
+            r = generate_structured(query, top_chunks, backend=backend)
+            results[source] = {
+                "blocked": False,
+                "answer":  r.get("answer", ""),
+                "chunks":  r.get("context_chunks", top_chunks),
+                "score":   top_chunks[0].get("rerank_score") if top_chunks else None,
+                "error":   r.get("error"),
+            }
+        except Exception as exc:
+            results[source] = {
+                "blocked": True,
+                "reason":  str(exc),
+                "chunks":  top_chunks,
+                "score":   top_chunks[0].get("rerank_score") if top_chunks else None,
+            }
+
+    return results
+
+
+def _compare_table_html(query: str, per_source: dict[str, dict]) -> str:
+    """Build the HTML side-by-side comparison table."""
+    sources = list(per_source.keys())
+    if not sources:
+        return "<p style='color:#94a3b8'>No sources to compare.</p>"
+
+    # ── Column headers ────────────────────────────────────────────────────────
+    src_headers = "".join(
+        f'<th style="min-width:200px">📄 {_safe(s)}</th>'
+        for s in sources
+    )
+
+    # ── Cell builders ─────────────────────────────────────────────────────────
+    def _na_cell(msg="—"):
+        return f'<td style="color:#64748b">{msg}</td>'
+
+    def answer_cell(src: str) -> str:
+        r = per_source[src]
+        if r.get("blocked"):
+            reason = _safe(r.get("reason", "No relevant content in this source"))
+            return f'<td><em style="color:#94a3b8">⊘ {reason}</em></td>'
+        ans = _safe(r.get("answer") or "N/A")
+        if len(ans) > 520:
+            ans = ans[:520] + "…"
+        return f'<td>{ans}</td>'
+
+    def pages_cell(src: str) -> str:
+        r = per_source[src]
+        if r.get("blocked"):
+            return _na_cell()
+        pages = sorted({c["metadata"]["start_page"] for c in r.get("chunks", [])})
+        return f'<td>{", ".join(str(p) for p in pages)}</td>'
+
+    def sections_cell(src: str) -> str:
+        r = per_source[src]
+        if r.get("blocked"):
+            return _na_cell()
+        seen: list[str] = []
+        for c in r.get("chunks", []):
+            t = c["metadata"]["section_title"]
+            if t not in seen:
+                seen.append(t)
+        return '<td>' + "<br>".join(_safe(s) for s in seen[:3]) + '</td>'
+
+    def confidence_cell(src: str) -> str:
+        r = per_source[src]
+        if r.get("blocked"):
+            return _na_cell()
+        score = r.get("score")
+        if score is None:
+            return _na_cell()
+        if score >= 4.0:
+            label, col = "High",     "#4ade80"
+        elif score >= 0.5:
+            label, col = "Moderate", "#60a5fa"
+        else:
+            label, col = "Low",      "#fbbf24"
+        return (
+            f'<td>'
+            f'<span style="color:{col};font-weight:600">{label}</span>'
+            f'<span style="color:#64748b;font-size:0.8em">&nbsp;({score:.2f})</span>'
+            f'</td>'
+        )
+
+    row_defs = [
+        ("✏️ Answer",     answer_cell),
+        ("📄 Pages Used", pages_cell),
+        ("📑 Sections",   sections_cell),
+        ("🎯 Confidence", confidence_cell),
+    ]
+
+    tbody = "".join(
+        f'<tr><td>{label}</td>{"".join(cell_fn(s) for s in sources)}</tr>'
+        for label, cell_fn in row_defs
+    )
+
+    q_short = _safe(query[:60] + ("…" if len(query) > 60 else ""))
+
+    return (
+        f'<div class="compare-wrap">'
+        f'<p style="color:#94a3b8;font-size:0.8rem;font-weight:600;'
+        f'text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.7rem">'
+        f'📊 Source Comparison &nbsp;·&nbsp; "{q_short}"</p>'
+        f'<div style="overflow-x:auto">'
+        f'<table class="compare-table">'
+        f'<thead><tr><th style="min-width:130px">Aspect</th>{src_headers}</tr></thead>'
+        f'<tbody>{tbody}</tbody>'
+        f'</table>'
+        f'</div>'
+        f'</div>'
+    )
+
+
+# ── Core query execution ───────────────────────────────────────────────────────
+
+def run_query(
+    query: str,
+    active_sources: list[str],
+    top_k: int,
+    rerank_pool: int,
+) -> dict:
     from retrieve import retrieve_per_source, rerank
     from guardrails import run_guardrails
     from generate import generate_structured
@@ -269,14 +480,18 @@ def run_query(query: str, active_sources: list[str], top_k: int, rerank_pool: in
 
     if not guard.allowed:
         return {
-            "answer": None, "context_chunks": [], "error": None,
-            "refusal": guard.reason,
-            "top_score": reranked[0].get("rerank_score") if reranked else None,
+            "answer":        None,
+            "context_chunks": [],
+            "error":         None,
+            "refusal":       guard.reason,
+            "top_score":     reranked[0].get("rerank_score") if reranked else None,
+            "_all_reranked": reranked,   # kept for compare feature
         }
 
     result = generate_structured(query, reranked)
-    result["refusal"]   = None
-    result["top_score"] = reranked[0].get("rerank_score") if reranked else None
+    result["refusal"]       = None
+    result["top_score"]     = reranked[0].get("rerank_score") if reranked else None
+    result["_all_reranked"] = reranked   # kept for compare feature
     return result
 
 
@@ -284,24 +499,25 @@ def run_query(query: str, active_sources: list[str], top_k: int, rerank_pool: in
 
 def on_process(file_objs):
     """Called when user clicks 'Process & Start Chat'."""
-    status_msg, all_sources = process_pdfs(file_objs)
+    status_msg, just_processed = process_pdfs(file_objs)
 
-    if not all_sources:
+    if not just_processed:
         # Processing failed completely — stay on upload screen
         return (
-            gr.update(visible=True),   # upload_group
-            gr.update(visible=False),  # chat_group
+            gr.update(visible=True),
+            gr.update(visible=False),
             gr.update(value=status_msg),
             gr.update(choices=[], value=[]),
             [],
         )
 
     return (
-        gr.update(visible=False),                    # upload_group
-        gr.update(visible=True),                     # chat_group
+        gr.update(visible=False),
+        gr.update(visible=True),
         gr.update(value=status_msg),
-        gr.update(choices=all_sources, value=all_sources),
-        [],                                          # clear chat history
+        # Only show files uploaded in this session, not historical chunks.json entries
+        gr.update(choices=just_processed, value=just_processed),
+        [],
     )
 
 
@@ -310,13 +526,27 @@ def on_add_more(file_objs, current_sources):
     if not file_objs:
         return gr.update(), []
 
-    _, all_sources = process_pdfs(file_objs)
-    return gr.update(choices=all_sources, value=all_sources), []
+    _, just_processed = process_pdfs(file_objs)
+    # Merge newly processed PDFs with whatever is already in the session selector
+    merged = sorted(set(current_sources or []) | set(just_processed))
+    return gr.update(choices=merged, value=merged), []
 
 
-def chat_fn(message: str, history: list, active_sources: list, top_k: int, rerank_pool: int):
+def chat_fn(
+    message: str,
+    history: list,
+    active_sources: list,
+    top_k: int,
+    rerank_pool: int,
+):
+    """
+    Handle a chat message.
+
+    Returns:
+        history, cleared_query_box, compare_row_update, last_result_state
+    """
     if not message.strip():
-        return history, ""
+        return history, "", gr.update(visible=False), None
 
     history = list(history)
     history.append({"role": "user", "content": message})
@@ -326,23 +556,80 @@ def chat_fn(message: str, history: list, active_sources: list, top_k: int, reran
             "role": "assistant",
             "content": "⚠️ No sources selected. Please check at least one PDF in the Sources panel.",
         })
-        return history, ""
+        return history, "", gr.update(visible=False), None
 
-    result   = run_query(message, active_sources, int(top_k), int(rerank_pool))
+    result = run_query(message, active_sources, int(top_k), int(rerank_pool))
+
+    # Decide whether to show the compare button.
+    # We need 2+ distinct sources in the full reranked pool (not just context_chunks).
+    all_reranked    = result.get("_all_reranked", [])
+    sources_present = list({
+        c.get("metadata", {}).get("source_doc")
+        for c in all_reranked
+        if c.get("metadata", {}).get("source_doc")
+    })
+    show_compare = len(sources_present) >= 2
+    new_state    = {"query": message, "reranked": all_reranked} if show_compare else None
+
     response = _format_response(result)
     history.append({"role": "assistant", "content": response})
-    return history, ""
+
+    return history, "", gr.update(visible=show_compare), new_state
+
+
+def compare_fn(last_state: dict | None, history: list):
+    """
+    Generator: show loading state → run per-source generation → render table.
+
+    Outputs: chatbot, compare_row
+    """
+    if not last_state:
+        yield history, gr.update()
+        return
+
+    query    = last_state.get("query", "")
+    reranked = last_state.get("reranked", [])
+
+    if not reranked or not query:
+        yield history, gr.update()
+        return
+
+    history = list(history)
+    history.append({
+        "role": "assistant",
+        "content": "🔍 Comparing sources — generating a separate answer for each PDF…",
+    })
+    yield history, gr.update(visible=False)   # hide button while working
+
+    per_source = _compare_per_source(query, reranked)
+    table_html = _compare_table_html(query, per_source)
+    history[-1] = {"role": "assistant", "content": table_html}
+    yield history, gr.update(visible=True)    # restore button when done
 
 
 def back_to_upload():
-    return gr.update(visible=True), gr.update(visible=False), []
+    return (
+        gr.update(visible=True),   # upload_group
+        gr.update(visible=False),  # chat_group
+        [],                        # chatbot
+        gr.update(visible=False),  # compare_row
+        None,                      # last_result_state
+    )
+
+
+def clear_chat():
+    return [], "", gr.update(visible=False), None
 
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
 
 with gr.Blocks(title="VaultMind") as demo:
 
-    # ── Shared header ──────────────────────────────────────────────────────────
+    # ── Shared state ──────────────────────────────────────────────────────────
+    # Stores the last query + all reranked chunks for the compare feature.
+    last_result_state = gr.State(None)
+
+    # ── Shared header ─────────────────────────────────────────────────────────
     gr.HTML("""
     <div class="vm-header">
         <p class="vm-title">🧠 VaultMind</p>
@@ -398,7 +685,7 @@ with gr.Blocks(title="VaultMind") as demo:
                     label="",
                     choices=[],
                     value=[],
-                    info="Uncheck a PDF to exclude it from retrieval.",
+                    info="Check PDFs to include · uncheck to exclude from retrieval.",
                 )
 
                 add_more_input = gr.File(
@@ -456,35 +743,59 @@ with gr.Blocks(title="VaultMind") as demo:
                         variant="primary",
                     )
 
+                # ── Compare row — hidden until 2+ sources are in results ──────
+                with gr.Row(visible=False) as compare_row:
+                    compare_btn = gr.Button(
+                        "🔍 Compare Sources",
+                        elem_id="compare-btn",
+                        variant="secondary",
+                        size="sm",
+                        scale=0,
+                    )
+                    gr.HTML(
+                        '<span style="color:#64748b;font-size:0.82rem;'
+                        'align-self:center;padding-left:0.6rem;">'
+                        'Results found in multiple PDFs — click to compare side-by-side'
+                        '</span>'
+                    )
+
     # ── Event wiring ──────────────────────────────────────────────────────────
 
-    # Process uploaded PDFs → switch to chat screen
     process_btn.click(
         on_process,
         inputs=[file_input],
         outputs=[upload_group, chat_group, status_box, source_selector, chatbot],
     )
 
-    # Add more PDFs from chat screen
     add_more_btn.click(
         on_add_more,
         inputs=[add_more_input, source_selector],
         outputs=[source_selector, chatbot],
     )
 
-    # Chat submit
+    # Chat — outputs now include compare_row visibility and the result state
     chat_inputs  = [query_box, chatbot, source_selector, top_k, rerank_pool]
-    chat_outputs = [chatbot, query_box]
+    chat_outputs = [chatbot, query_box, compare_row, last_result_state]
     query_box.submit(chat_fn, inputs=chat_inputs, outputs=chat_outputs)
     send_btn.click(chat_fn,  inputs=chat_inputs, outputs=chat_outputs)
 
-    # Clear chat
-    clear_btn.click(lambda: ([], ""), outputs=[chatbot, query_box])
+    # Compare button — generator hides button while working, restores after
+    compare_btn.click(
+        compare_fn,
+        inputs=[last_result_state, chatbot],
+        outputs=[chatbot, compare_row],
+    )
 
-    # Back to upload
+    # Clear chat — also hides compare button and clears state
+    clear_btn.click(
+        clear_chat,
+        outputs=[chatbot, query_box, compare_row, last_result_state],
+    )
+
+    # Back to upload — hides compare button and clears state
     back_btn.click(
         back_to_upload,
-        outputs=[upload_group, chat_group, chatbot],
+        outputs=[upload_group, chat_group, chatbot, compare_row, last_result_state],
     )
 
 
@@ -493,7 +804,7 @@ with gr.Blocks(title="VaultMind") as demo:
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=None,   # auto-assign a free port (avoids conflicts on restart)
+        server_port=None,
         share=False,
         inbrowser=True,
         theme=gr.themes.Soft(

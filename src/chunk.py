@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -156,8 +157,13 @@ def chunk_sections(
         chunk_overlap=chunk_overlap,
     )
 
-    chunks = []
-    chunk_id = 1
+    chunks: list = []
+    # Per-source sequential counters so that chunk IDs are globally unique
+    # even when different PDFs are processed in separate chunk_sections() calls
+    # (as in the Gradio UI).  A 6-char MD5 prefix derived from the source
+    # filename makes IDs deterministic: re-ingesting the same PDF always
+    # produces the same IDs, so ChromaDB upsert overwrites correctly.
+    source_counters: dict[str, int] = {}
 
     for section in sections:
 
@@ -167,10 +173,14 @@ def chunk_sections(
             split_chunks = splitter.split_text(section["text"])
 
         for index, chunk_text in enumerate(split_chunks):
+            source = section.get("source_doc", "unknown")
+            source_counters[source] = source_counters.get(source, 0) + 1
+            seq      = source_counters[source]
+            src_hash = hashlib.md5(source.encode()).hexdigest()[:6]
 
             chunks.append(
                 {
-                    "chunk_id": f"chunk_{chunk_id:05d}",
+                    "chunk_id": f"chunk_{src_hash}_{seq:05d}",
                     "type": section["type"],
                     "start_page": section["start_page"],
                     "end_page": section["end_page"],
@@ -184,8 +194,6 @@ def chunk_sections(
                     "caption": section.get("caption"),
                 }
             )
-
-            chunk_id += 1
 
     return chunks
 

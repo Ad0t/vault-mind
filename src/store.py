@@ -52,6 +52,27 @@ def store_chunks(
     return collection
 
 
+
+def delete_source(
+    source_doc: str,
+    chroma_path: str | Path = CHROMA_PATH,
+    collection_name: str = COLLECTION_NAME,
+) -> None:
+    """
+    Delete all ChromaDB entries whose source_doc metadata matches source_doc.
+
+    Called before upserting a re-uploaded PDF so that old chunks with
+    now-stale IDs don't linger alongside the freshly generated ones.
+    Safe to call even when the collection doesn't exist yet.
+    """
+    client = chromadb.PersistentClient(path=str(chroma_path))
+    try:
+        collection = client.get_collection(collection_name)
+        collection.delete(where={"source_doc": source_doc})
+    except Exception:
+        pass  # collection doesn't exist yet — nothing to delete
+
+
 def upsert_chunks(
     chunks: list[dict],
     embeddings,
