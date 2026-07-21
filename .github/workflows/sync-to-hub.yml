@@ -14,9 +14,10 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - uses: huggingface/hub-sync@v0.1.0
-        with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: 4d0T/vault-mind
-          hf_token: ${{ secrets.HF_TOKEN }}
-          repo_type: space
+      - name: Push to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add hf https://4d0T:$HF_TOKEN@huggingface.co/spaces/4d0T/vault-mind
+          git push hf main --force
+
