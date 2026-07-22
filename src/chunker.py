@@ -160,7 +160,7 @@ def chunk_sections(
     chunks: list = []
     # Per-source sequential counters so that chunk IDs are globally unique
     # even when different PDFs are processed in separate chunk_sections() calls
-    # (as in the Gradio UI).  A 6-char MD5 prefix derived from the source
+    # (as in the Streamlit UI).  A 6-char MD5 prefix derived from the source
     # filename makes IDs deterministic: re-ingesting the same PDF always
     # produces the same IDs, so ChromaDB upsert overwrites correctly.
     source_counters: dict[str, int] = {}

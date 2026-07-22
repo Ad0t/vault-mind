@@ -1,20 +1,9 @@
----
-title: VaultMind
-emoji: 🧠
-colorFrom: purple
-colorTo: indigo
-sdk: gradio
-sdk_version: 6.20.0
-app_file: app.py
-pinned: false
----
-
 # VaultMind 🧠📚
 
 **An End-to-End Hybrid RAG System with Citation Grounding, Multi-Source Comparison & Section-Aware Document Processing.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Gradio UI](https://img.shields.io/badge/UI-Gradio_6.x-orange.svg)](https://gradio.app/)
+[![Streamlit UI](https://img.shields.io/badge/UI-Streamlit_1.x-red.svg)](https://streamlit.io/)
 [![ChromaDB](https://img.shields.io/badge/Vector_Store-ChromaDB-green.svg)](https://trychroma.com/)
 [![Groq & Ollama](https://img.shields.io/badge/LLM-Groq_%7C_Ollama-purple.svg)](https://groq.com/)
 
@@ -72,15 +61,15 @@ mkdir -p data/raw
 
 ### 5. Launch VaultMind!
 
-You can run VaultMind either via the **Interactive Gradio Web UI** or the **CLI Pipeline**:
+You can run VaultMind either via the **Interactive Streamlit Web UI** or the **CLI Pipeline**:
 
 #### Option A: Interactive Web UI (Recommended)
 ```powershell
-python app.py
+streamlit run app.py
 ```
-* Open your browser to **`http://localhost:7860`** (or the auto-assigned local port).
-* **Screen 1 (Upload):** View detected PDFs or upload multiple new files, then click **Process & Chat**.
-* **Screen 2 (Chat):** Select active source PDFs dynamically, ask complex technical queries, and view grounded answers with expandable page-level citations (`Page 107 — 12. ACID Properties in DBMS`).
+* Open your browser to **`http://localhost:8501`** (or the auto-assigned local port).
+* **Sidebar:** Upload multiple PDFs, click **⚡ Process & Start Chat**, dynamically select/deselect active sources, and adjust top-k and rerank pool settings.
+* **Main Screen:** Ask complex technical queries, view grounded answers with expandable page-level citations (`Page 107 — 12. ACID Properties in DBMS`), and trigger side-by-side **Compare Sources** tables when results span multiple PDFs.
 
 #### Option B: End-to-End Interactive CLI Pipeline
 ```powershell
@@ -171,7 +160,7 @@ Every chunk maintains exact trace metadata:
 
 ### 5. Citation-Grounded Structured Generation (`generate.py`)
 * Enforces strict JSON Schema parsing on generation responses.
-* Ensures every claim is tied directly to retrieved chunks, displaying exact page ranges and source PDF names inside the Gradio UI and CLI outputs.
+* Ensures every claim is tied directly to retrieved chunks, displaying exact page ranges and source PDF names inside the Streamlit UI and CLI outputs.
 
 ### 6. Multi-Source Comparison & Agreement Analysis (`compare.py`)
 * When 2+ sources are retrieved for a query, VaultMind can isolate chunks by document and generate **standalone per-source answers side-by-side**.
@@ -216,7 +205,7 @@ python src/pipeline.py --retrieve-only --query "Explain ACID properties" --backe
 
 ```text
 vaultmind/
-├── app.py                     # Gradio 6.x Two-Screen Web Application
+├── app.py                     # Streamlit Two-Screen Web Application
 ├── requirements.txt           # Project dependencies
 ├── README.md                  # Documentation (This file)
 ├── .env                       # Environment variables & API keys
