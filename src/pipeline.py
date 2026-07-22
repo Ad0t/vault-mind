@@ -126,7 +126,7 @@ def run_pipeline(
     retrieve_only : if True, skip stages 1-4 and go straight to retrieval
     """
     from ingest import extract_pages, save_pages
-    from chunk import build_sections, chunk_sections, save_chunks
+    from chunker import build_sections, chunk_sections, save_chunks
     from embed import generate_embeddings, save_embeddings
     from store import store_chunks
     from retrieve import retrieve_per_source, rerank, print_results

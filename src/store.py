@@ -2,7 +2,7 @@ from pathlib import Path
 
 import chromadb
 
-from chunk import CHUNKS_PATH, load_chunks
+from chunker import CHUNKS_PATH, load_chunks
 from embed import EMBEDDINGS_PATH, load_embeddings
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

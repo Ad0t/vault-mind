@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from chunk import CHUNKS_PATH, load_chunks
+from chunker import CHUNKS_PATH, load_chunks
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"

@@ -7,7 +7,7 @@ import chromadb
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
 
-from chunk import CHUNKS_PATH, load_chunks
+from chunker import CHUNKS_PATH, load_chunks
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

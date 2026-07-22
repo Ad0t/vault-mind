@@ -168,7 +168,7 @@ def process_pdfs(file_objs) -> tuple[str, list[str]]:
     so the UI only shows what the user uploaded in this session.
     """
     from ingest import extract_pages
-    from chunk import build_sections, chunk_sections
+    from chunker import build_sections, chunk_sections
     from embed import generate_embeddings
     from store import upsert_chunks
 
