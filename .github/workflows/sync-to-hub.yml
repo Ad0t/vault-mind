@@ -21,7 +21,7 @@ jobs:
           git clone https://4d0T:$HF_TOKEN@huggingface.co/spaces/4d0T/vault-mind /tmp/hf-space
 
           # Sync source code only — exclude binary/runtime directories
-          rsync -av \
+          rsync -av --delete \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='docs' \
