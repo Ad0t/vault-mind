@@ -9,7 +9,6 @@ app_file: app.py
 pinned: false
 ---
 
-
 # VaultMind 🧠📚
 
 **An End-to-End Hybrid RAG System with Citation Grounding, Multi-Source Comparison & Section-Aware Document Processing.**
