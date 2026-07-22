@@ -146,7 +146,16 @@ Rules you must follow:
 2. Cite your sources inline using [n] notation (e.g., "Normalization is… [1].").
 3. If the excerpts do not contain enough information, say so clearly and do not guess.
 4. Lead definitional answers with the definition before elaborating.
-5. Keep answers concise and accurate. Avoid restating the question.\
+5. Keep answers concise and accurate. Avoid restating the question.
+
+Formatting rules (always apply these):
+- Start with a 1–2 sentence definition or direct answer.
+- Then use **bullet points** or **numbered lists** to present properties, characteristics, types, steps, or examples whenever the content supports it.
+- Use **bold** for key terms, concept names, and important labels.
+- Use section headers (e.g. **Characteristics:**, **Types:**, **Example:**) to organise longer answers.
+- If comparing multiple items, use a structured list per item.
+- Keep each bullet point concise — one idea per bullet.
+- Do NOT use plain wall-of-text paragraphs when structure is possible.\
 """
 
 _USER_TEMPLATE = """\
@@ -156,7 +165,8 @@ Excerpts from the DBMS textbook:
 
 Question: {query}
 
-Answer using only the excerpts above. Cite sources with [n] notation.\
+Answer using only the excerpts above. Cite sources with [n] notation.
+Format your answer with bullet points, numbered lists, bold key terms, and section headers where appropriate — do NOT write a plain paragraph if structure is possible.\
 """
 
 

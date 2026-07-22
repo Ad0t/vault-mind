@@ -22,6 +22,14 @@ except ImportError:
     pass
 
 import streamlit as st
+from streamlit.runtime import exists as _st_runtime_exists
+
+# Auto-relaunch via `streamlit run` if executed directly with `python app.py`
+if not _st_runtime_exists():
+    import subprocess
+    print("⚡ Launching VaultMind via 'streamlit run'...")
+    subprocess.run([sys.executable, "-m", "streamlit", "run", __file__] + sys.argv[1:])
+    sys.exit(0)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 RAW_DIR       = ROOT / "data" / "raw"
@@ -83,7 +91,35 @@ html, body, [class*="css"]  { font-family: 'Inter', sans-serif !important; }
     vertical-align: top;
     color: #cbd5e1;
 }
-.compare-table tr:nth-child(even) td { background: #1a1a2e; }
+/* ── Sidebar reopen floating button ── */
+/* Streamlit renders a small arrow when the sidebar is collapsed.
+   We restyle it into a prominent glowing FAB so it's impossible to miss. */
+[data-testid="collapsedControl"] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 0 !important;
+    transform: translateY(-50%) !important;
+    width: 36px !important;
+    height: 56px !important;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border-radius: 0 12px 12px 0 !important;
+    box-shadow: 3px 0 16px rgba(99, 102, 241, 0.55) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: width 0.2s ease, box-shadow 0.2s ease !important;
+    z-index: 999 !important;
+}
+[data-testid="collapsedControl"]:hover {
+    width: 44px !important;
+    box-shadow: 4px 0 22px rgba(99, 102, 241, 0.75) !important;
+}
+[data-testid="collapsedControl"] svg {
+    fill: #ffffff !important;
+    width: 18px !important;
+    height: 18px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
