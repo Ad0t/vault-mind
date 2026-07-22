@@ -35,6 +35,9 @@ jobs:
             --exclude='*.pyc' \
             ./ /tmp/hf-space/
 
+          # Use the lean Spaces-specific requirements (not the full pip freeze)
+          cp requirements-spaces.txt /tmp/hf-space/requirements.txt
+
           cd /tmp/hf-space
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
