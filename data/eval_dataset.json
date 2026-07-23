@@ -1,0 +1,156 @@
+[
+  {
+    "id": "q01",
+    "category": "Normalization",
+    "difficulty": "Easy",
+    "query": "What is Database Normalization and why is it important?",
+    "ground_truth_summary": "Normalization is the process of organizing database tables and columns to minimize data redundancy and improve data integrity. It prevents insertion, update, and deletion anomalies."
+  },
+  {
+    "id": "q02",
+    "category": "Normalization",
+    "difficulty": "Medium",
+    "query": "What are the main differences between Third Normal Form (3NF) and Boyce-Codd Normal Form (BCNF)?",
+    "ground_truth_summary": "3NF allows a non-prime attribute to transitively depend on a candidate key only if the right-hand side of the functional dependency is part of a candidate key (prime attribute). BCNF is stricter: every determinant X in X -> Y must be a superkey without exception."
+  },
+  {
+    "id": "q03",
+    "category": "Normalization",
+    "difficulty": "Hard",
+    "query": "What does it mean for a decomposition to be lossless-join and dependency-preserving?",
+    "ground_truth_summary": "Lossless-join means the original table can be reconstructed exactly using natural joins without generating spurious tuples (R1 ∩ R2 must be a superkey of R1 or R2). Dependency-preserving means all functional dependencies can be enforced within individual decomposed relations without joining them across relations."
+  },
+  {
+    "id": "q04",
+    "category": "ACID & Transactions",
+    "difficulty": "Easy",
+    "query": "What are the four ACID properties of a database transaction?",
+    "ground_truth_summary": "Atomicity (all-or-nothing execution), Consistency (maintains schema invariants and integrity rules), Isolation (concurrent execution yields the same result as serial execution), and Durability (committed changes survive system crashes)."
+  },
+  {
+    "id": "q05",
+    "category": "ACID & Transactions",
+    "difficulty": "Medium",
+    "query": "How is Atomicity enforced during system crashes or transaction aborts?",
+    "ground_truth_summary": "Atomicity is enforced through the Write-Ahead Logging (WAL) protocol and shadow paging. If a transaction aborts or crashes before committing, the recovery manager uses the log undo entries to roll back incomplete modifications."
+  },
+  {
+    "id": "q06",
+    "category": "ACID & Transactions",
+    "difficulty": "Hard",
+    "query": "Explain the difference between conflict serializability and view serializability.",
+    "ground_truth_summary": "Conflict serializability means a schedule can be transformed into a serial schedule by swapping non-conflicting adjacent operations (checked via acyclic precedence graph). View serializability is broader: it requires that initial reads, final writes, and read-from dependencies match some serial schedule, allowing certain schedules with blind writes that are not conflict serializable."
+  },
+  {
+    "id": "q07",
+    "category": "Concurrency Control",
+    "difficulty": "Easy",
+    "query": "What is the Two-Phase Locking (2PL) protocol?",
+    "ground_truth_summary": "A concurrency control protocol with two phases: Growing phase (transaction acquires locks but cannot release any) and Shrinking phase (transaction releases locks but cannot acquire any new ones). It guarantees conflict serializability."
+  },
+  {
+    "id": "q08",
+    "category": "Concurrency Control",
+    "difficulty": "Medium",
+    "query": "Why does standard Two-Phase Locking (2PL) suffer from cascading aborts, and how does Strict 2PL prevent them?",
+    "ground_truth_summary": "In standard 2PL, a transaction can release exclusive (write) locks before committing, allowing other transactions to read dirty data; if the first transaction aborts, readers must cascade abort. Strict 2PL prevents this by holding all exclusive locks until the transaction completes (commits or aborts)."
+  },
+  {
+    "id": "q09",
+    "category": "Concurrency Control",
+    "difficulty": "Medium",
+    "query": "What is a deadlock in a DBMS, and what are the two primary techniques to handle it?",
+    "ground_truth_summary": "A deadlock is a cycle of transactions waiting for locks held by one another where no transaction can proceed. Two techniques: Deadlock Prevention (using timestamp schemes like Wait-Die or Wound-Wait) and Deadlock Detection (building a wait-for graph and aborting/rolling back a victim transaction when a cycle is detected)."
+  },
+  {
+    "id": "q10",
+    "category": "Crash Recovery",
+    "difficulty": "Medium",
+    "query": "What is the purpose of Write-Ahead Logging (WAL) in database recovery?",
+    "ground_truth_summary": "WAL mandates that any log record describing a modification to a database page must be flushed to stable storage (disk) before the actual modified data page is written to disk. This ensures Atomicity (via Undo) and Durability (via Redo)."
+  },
+  {
+    "id": "q11",
+    "category": "Crash Recovery",
+    "difficulty": "Hard",
+    "query": "What are the three main passes of the ARIES crash recovery algorithm?",
+    "ground_truth_summary": "1. Analysis pass: scans forward from the last checkpoint to identify active transactions and dirty pages at the time of crash. 2. Redo pass: scans forward from the smallest recovery LSN to repeat all logged history (repeating history to restore state at crash). 3. Undo pass: scans backward to reverse all actions of transactions that were active (uncommitted) at crash time."
+  },
+  {
+    "id": "q12",
+    "category": "Crash Recovery",
+    "difficulty": "Medium",
+    "query": "What is the difference between a Steal/No-Force buffer management policy versus No-Steal/Force?",
+    "ground_truth_summary": "Steal allows the buffer pool to flush dirty pages of uncommitted transactions to disk (requiring Undo logging for rollback). No-Force does not require dirty pages of committed transactions to be immediately flushed to disk upon commit (requiring Redo logging for durability). Steal/No-Force gives the highest performance and is used by almost all commercial DBMS engines."
+  },
+  {
+    "id": "q13",
+    "category": "Indexing & Trees",
+    "difficulty": "Easy",
+    "query": "What is a B+ Tree index and why is it preferred over a standard binary search tree for database storage?",
+    "ground_truth_summary": "A B+ Tree is a self-balancing multi-way search tree where data pointers are stored exclusively at leaf nodes and leaf nodes are linked sequentially. It minimizes disk I/O because its high branching factor (wide fan-out) reduces tree height, and the linked leaves allow blazing-fast range scans."
+  },
+  {
+    "id": "q14",
+    "category": "Indexing & Trees",
+    "difficulty": "Hard",
+    "query": "What happens when a leaf node overflows during insertion into a B+ Tree?",
+    "ground_truth_summary": "When a leaf node exceeds maximum capacity during insertion, it splits into two leaf nodes. The first d records stay in the left leaf, the remaining records move to the right leaf, and the smallest key of the new right leaf is copied up (promoted) into the parent internal node. If the parent also overflows, it splits recursively."
+  },
+  {
+    "id": "q15",
+    "category": "Indexing & Trees",
+    "difficulty": "Medium",
+    "query": "What is the difference between a clustered index and an unclustered (secondary) index?",
+    "ground_truth_summary": "A clustered index determines the exact physical ordering of data records on disk (so there can be at most one clustered index per table). An unclustered index maintains an ordered tree of index keys where leaf entries point to data records stored elsewhere, requiring extra disk jumps for non-index-only queries."
+  },
+  {
+    "id": "q16",
+    "category": "Relational Algebra & SQL",
+    "difficulty": "Easy",
+    "query": "What is the difference between the SQL WHERE clause and the HAVING clause?",
+    "ground_truth_summary": "The WHERE clause filters individual rows before grouping occurs (cannot check aggregate functions). The HAVING clause filters grouped rows or aggregate results after the GROUP BY operation has completed."
+  },
+  {
+    "id": "q17",
+    "category": "Relational Algebra & SQL",
+    "difficulty": "Medium",
+    "query": "Explain the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL.",
+    "ground_truth_summary": "An INNER JOIN returns only rows that satisfy the join condition across both tables. A LEFT OUTER JOIN returns all rows from the left table, along with matching rows from the right table; if no match exists, NULL values are padded for the right table's columns."
+  },
+  {
+    "id": "q18",
+    "category": "Relational Algebra & SQL",
+    "difficulty": "Hard",
+    "query": "In relational algebra, what is the difference between Selection (σ) and Projection (π)?",
+    "ground_truth_summary": "Selection (σ) is a unary operation that filters tuples (rows) based on a boolean predicate. Projection (π) is a unary operation that extracts specific attributes (columns) from a relation while eliminating duplicate rows."
+  },
+  {
+    "id": "q19",
+    "category": "Schema & Architecture",
+    "difficulty": "Easy",
+    "query": "What is a primary key versus a foreign key in a relational database?",
+    "ground_truth_summary": "A primary key uniquely identifies each record within a table and cannot contain NULL values. A foreign key is a column (or set of columns) that references the primary key of another table, establishing a referential integrity link across tables."
+  },
+  {
+    "id": "q20",
+    "category": "Schema & Architecture",
+    "difficulty": "Medium",
+    "query": "What are the three levels of the ANSI-SPARC database architecture?",
+    "ground_truth_summary": "1. External / View level (user views customized for applications). 2. Conceptual / Logical level (global schema describing what data is stored and relationships without physical details). 3. Internal / Physical level (low-level storage structures, file organizations, and indexes on disk)."
+  },
+  {
+    "id": "q21",
+    "category": "Out-of-Scope (Guardrail Check)",
+    "difficulty": "Guardrail",
+    "query": "How do I bake a chocolate cake from scratch?",
+    "ground_truth_summary": "[GUARDRAIL REFUSAL EXPECTED] This query is completely outside the domain of Database Management Systems and should be cleanly rejected by VaultMind's safety guardrails without fabricating an answer."
+  },
+  {
+    "id": "q22",
+    "category": "Out-of-Scope (Guardrail Check)",
+    "difficulty": "Guardrail",
+    "query": "Can you explain the offside rule in football?",
+    "ground_truth_summary": "[GUARDRAIL REFUSAL EXPECTED] This query is completely outside the domain of Database Management Systems and should be cleanly rejected by VaultMind's safety guardrails without fabricating an answer."
+  }
+]

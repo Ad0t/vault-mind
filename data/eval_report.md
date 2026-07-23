@@ -1,0 +1,1264 @@
+# VaultMind — Human & LLM Evaluation Report (20+ Q&A Benchmark)
+
+## 📐 Evaluation Rubric (3 Axes | Score 1 to 5)
+
+### 1. Correctness (Factuality & Entailment)
+- **5 (Perfect):** Every statement is completely accurate and logically entailed by the ground truth and retrieved chunks.
+- **3 (Partial):** Core concept is correct, but contains minor inaccuracies or slight misunderstandings.
+- **1 (Hallucinated / Incorrect):** Directly contradicts established DBMS principles or makes unsupported claims.
+
+### 2. Citation Precision (Grounding & Provenance)
+- **5 (Exact):** Inline `[n]` citations point precisely to the exact page and section header where the claim is stated.
+- **3 (Approximate):** Citations point to the right document/chapter, but specific page numbers are broad or slightly off.
+- **1 (Unverified / Missing):** No citations provided, or citations point to completely irrelevant sections.
+
+### 3. Completeness (Depth & Structure)
+- **5 (Comprehensive & Structured):** Leads with a clear definition, uses bullet points/numbered lists for key properties, and covers all critical facets.
+- **3 (Adequate):** Answers the basic question but misses key nuances or presents as a flat paragraph.
+- **1 (Incomplete):** Omits critical details or cuts off abruptly.
+
+*(Note: For out-of-scope queries `q21-q22`, a clean `[GUARDRAIL REFUSAL]` score is **5/5/5** across all axes for correct boundary enforcement)*
+
+---
+
+## 📊 Evaluation Scorecard Table
+
+| ID | Category | Query | Correctness (1-5) | Citation Precision (1-5) | Completeness (1-5) | Notes |
+| :--- | :--- | :--- | :---: | :---: | :---: | :--- |
+| `q01` | **Normalization** | What is Database Normalization and why is it important? | | | | |
+| `q02` | **Normalization** | What are the main differences between Third Normal Form (3NF) and Boyce-Codd Normal Form (BCNF)? | | | | |
+| `q03` | **Normalization** | What does it mean for a decomposition to be lossless-join and dependency-preserving? | | | | |
+| `q04` | **ACID & Transactions** | What are the four ACID properties of a database transaction? | | | | |
+| `q05` | **ACID & Transactions** | How is Atomicity enforced during system crashes or transaction aborts? | | | | |
+| `q06` | **ACID & Transactions** | Explain the difference between conflict serializability and view serializability. | | | | |
+| `q07` | **Concurrency Control** | What is the Two-Phase Locking (2PL) protocol? | | | | |
+| `q08` | **Concurrency Control** | Why does standard Two-Phase Locking (2PL) suffer from cascading aborts, and how does Strict 2PL prevent them? | | | | |
+| `q09` | **Concurrency Control** | What is a deadlock in a DBMS, and what are the two primary techniques to handle it? | | | | |
+| `q10` | **Crash Recovery** | What is the purpose of Write-Ahead Logging (WAL) in database recovery? | | | | |
+| `q11` | **Crash Recovery** | What are the three main passes of the ARIES crash recovery algorithm? | | | | |
+| `q12` | **Crash Recovery** | What is the difference between a Steal/No-Force buffer management policy versus No-Steal/Force? | | | | |
+| `q13` | **Indexing & Trees** | What is a B+ Tree index and why is it preferred over a standard binary search tree for database storage? | | | | |
+| `q14` | **Indexing & Trees** | What happens when a leaf node overflows during insertion into a B+ Tree? | | | | |
+| `q15` | **Indexing & Trees** | What is the difference between a clustered index and an unclustered (secondary) index? | | | | |
+| `q16` | **Relational Algebra & SQL** | What is the difference between the SQL WHERE clause and the HAVING clause? | | | | |
+| `q17` | **Relational Algebra & SQL** | Explain the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL. | | | | |
+| `q18` | **Relational Algebra & SQL** | In relational algebra, what is the difference between Selection (σ) and Projection (π)? | | | | |
+| `q19` | **Schema & Architecture** | What is a primary key versus a foreign key in a relational database? | | | | |
+| `q20` | **Schema & Architecture** | What are the three levels of the ANSI-SPARC database architecture? | | | | |
+| `q21` | **Out-of-Scope (Guardrail Check)** | How do I bake a chocolate cake from scratch? | | | | |
+| `q22` | **Out-of-Scope (Guardrail Check)** | Can you explain the offside rule in football? | | | | |
+
+---
+
+## 📝 Detailed Q&A Comparison Breakdown
+
+### `q01` — What is Database Normalization and why is it important?
+- **Category:** Normalization | **Difficulty:** Easy | **Latency:** 30.05s
+
+#### 🎯 Ground Truth Summary
+> Normalization is the process of organizing database tables and columns to minimize data redundancy and improve data integrity. It prevents insertion, update, and deletion anomalies.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Database Normalization:**
+
+Database normalization is the process of organizing the attributes of the database to reduce or eliminate data redundancy (having the same data but at different places) [1].
+
+**Importance of Database Normalization:**
+
+Database normalization is important because it helps in:
+
+* Eliminating data redundancy and inconsistencies [1]
+* Maintaining data quality [2]
+* Communicating database design facts [2]
+* Identifying potential keys and normalizing the database [2]
+* Reducing data redundancy and ensuring data integrity [3]
+* Eliminating undesirable deletion, insertion, and update anomalies [3]
+* Making a proper and useful relationship between tables [3]
+
+**Features of Database Normalization:**
+
+* **Elimination of Data Redundancy:** Normalization helps in reducing or eliminating data redundancy, which can improve the efficiency and consistency of the database [4]
+* **Ensuring Data Consistency:** Normalization helps in ensuring that the data in the database is consistent and accurate [4]
+* **Simplification of Data Management:** Normalization simplifies the process of managing data in a database [4]
+* **Improved Database Design:** Normalization helps in improving the overall design of the database [4]
+* **Avoiding Update Anomalies:** Normalization helps in avoiding update anomalies [4]
+* **Standardization:** Normalization helps in standardizing the data in the database [4]
+
+**Types of Normalization:**
+
+1. **First Normal Form (1NF):** Eliminates duplicate data and simplifies queries [5]
+2. **Second Normal Form (2NF):** Eliminates redundant data by requiring that each non-key attribute be dependent on the primary key [5]
+3. **Third Normal Form (3NF):** Requires that all non-key attributes be independent of each other [5]
+4. **Boyce-Codd Normal Form (BCNF):** Ensures that each determinant in a table is a candidate key [5]
+5. **Fourth Normal Form (4NF):** Ensures that a table does not contain any multi-valued dependencies [5]
+6. **Fifth Normal Form (5NF):** Involves decomposing a table into smaller tables to remove data redundancy and improve data integrity [5]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 52 — 9.Introduction to Database Normalization
+    Database Management Systems.pdf
+[2] Page 52 — Advantages of Functional Dependency
+    Database Management Systems.pdf
+[3] Page 41 — Removal of Anomalies
+    Database Management Systems.pdf
+[4] Page 53 — The features of database normalization are as follows:
+    Database Management Systems.pdf
+[5] Page 53–54 — 9.1.Normal Forms & Dependency
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q02` — What are the main differences between Third Normal Form (3NF) and Boyce-Codd Normal Form (BCNF)?
+- **Category:** Normalization | **Difficulty:** Medium | **Latency:** 27.31s
+
+#### 🎯 Ground Truth Summary
+> 3NF allows a non-prime attribute to transitively depend on a candidate key only if the right-hand side of the functional dependency is part of a candidate key (prime attribute). BCNF is stricter: every determinant X in X -> Y must be a superkey without exception.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Differences between Third Normal Form (3NF) and Boyce-Codd Normal Form (BCNF):**
+
+**Definition:**
+
+* **Third Normal Form (3NF)**: A relation is in 3NF if it is in 2NF and all non-key attributes are independent of each other [2].
+* **Boyce-Codd Normal Form (BCNF)**: BCNF is a stricter form of 3NF that ensures that each determinant in a table is a candidate key [2].
+
+**Key differences:**
+
+* **Determinant and candidate key**: In BCNF, each determinant must be a candidate key, whereas in 3NF, this is not a requirement [2].
+* **Transitive dependency**: 3NF only eliminates transitive dependencies for non-prime attributes, whereas BCNF ensures that each non-key attribute is dependent only on the candidate key [4].
+* **Superkey requirement**: In BCNF, the determinant must be a superkey, whereas in 3NF, this is not a requirement [4].
+
+**Comparison:**
+
+|  | Third Normal Form (3NF) | Boyce-Codd Normal Form (BCNF) |
+| --- | --- | --- |
+| **Determinant and candidate key** | No requirement | Each determinant must be a candidate key |
+| **Transitive dependency** | Eliminates transitive dependencies for non-prime attributes | Ensures that each non-key attribute is dependent only on the candidate key |
+| **Superkey requirement** | No requirement | Determinant must be a superkey |
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 56 — Boyce-Codd Normal Form (BCNF), Fourth and Fifth Normal Form
+    Database Management Systems.pdf
+[2] Page 53–54 — 9.1.Normal Forms & Dependency
+    Database Management Systems.pdf
+[3] Page 61 — Example of Lossless Decomposition
+    Database Management Systems.pdf
+[4] Page 55–56 — Table 1Table 2
+    Database Management Systems.pdf
+[5] Page 471–472 — 15.8.2 Fourth Normal Form
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q03` — What does it mean for a decomposition to be lossless-join and dependency-preserving?
+- **Category:** Normalization | **Difficulty:** Hard | **Latency:** 27.15s
+
+#### 🎯 Ground Truth Summary
+> Lossless-join means the original table can be reconstructed exactly using natural joins without generating spurious tuples (R1 ∩ R2 must be a superkey of R1 or R2). Dependency-preserving means all functional dependencies can be enforced within individual decomposed relations without joining them across relations.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Lossless-Join and Dependency-Preserving Decomposition:**
+
+A decomposition is considered **lossless-join and dependency-preserving** when it meets two conditions:
+
+### **Lossless-Join Condition:**
+
+* The decomposition is **lossless-join** if the join of the decomposed relations returns the original relation [2].
+* This means that the decomposed relations can be joined back together to form the original relation without losing any data [2].
+* A decomposition is lossless-join if at least one of the following functional dependencies is in F+ (Closure of functional dependencies):
+	1. X → Y
+	2. Y → X
+	3. X → Y and Y → X [5]
+
+### **Dependency-Preserving Condition:**
+
+* The decomposition is **dependency-preserving** if all functional dependencies (FDs) that hold on the original relation are preserved in the decomposed relations [4].
+* This means that the decomposed relations maintain the same dependencies as the original relation [4].
+* A decomposition is dependency-preserving if it satisfies the FDs in F, π (r) ◃▹ π (r) = r [4].
+
+### **Example:**
+
+* A decomposition is lossless-join and dependency-preserving if it meets both conditions above [1, 4].
+* For example, if a relation R is decomposed into R1 and R2, and the join of R1 and R2 returns the original relation R, and all FDs that hold on R are preserved in R1 and R2, then the decomposition is lossless-join and dependency-preserving [2, 4].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 65 — Disadvantages of Lossless Join and Dependency Preserving Decomposition
+    Database Management Systems.pdf
+[2] Page 60 — 9.3. Lossless Decomposition and Dependency Preserving Decomposition What is Lossless Decomposition?
+    Database Management Systems.pdf
+[3] Page 64 — Advantages of Lossless Join and Dependency Preserving Decomposition
+    Database Management Systems.pdf
+[4] Page 474–475 — 15.9 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+[5] Page 61 — 0 seconds of 17 seconds Volume 0%
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q04` — What are the four ACID properties of a database transaction?
+- **Category:** ACID & Transactions | **Difficulty:** Easy | **Latency:** 27.08s
+
+#### 🎯 Ground Truth Summary
+> Atomicity (all-or-nothing execution), Consistency (maintains schema invariants and integrity rules), Isolation (concurrent execution yields the same result as serial execution), and Durability (committed changes survive system crashes).
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**ACID Properties:**
+
+The four ACID properties of a database transaction are:
+
+1. **Atomicity**
+2. **Consistency**
+3. **Isolation**
+4. **Durability**
+
+**Definition and Explanation:**
+
+* **Atomicity**: Ensures that a transaction is treated as a single, indivisible unit of work. Either all operations within the transaction are completed successfully, or none of them are. [1]
+* **Consistency**: Ensures that a transaction takes the database from one consistent state to another consistent state. [1]
+* **Isolation**: Ensures that multiple transactions can execute concurrently without interfering with each other. [1]
+* **Durability**: Ensures that once a transaction is committed, its changes are permanent and will survive any subsequent system failures. [1], [5]
+
+**Advantages of ACID Properties:**
+
+* Data Consistency: Ensures that the data remains consistent and accurate after any transaction execution. [3]
+* Data Integrity: Maintains the integrity of the data by ensuring that any changes to the database are permanent and cannot be lost. [3]
+* Concurrency Control: Helps to manage multiple transactions occurring concurrently by preventing interference between them. [3]
+* Recovery: Ensures that in case of any failure or crash, the system can recover the data up to the point of failure or crash. [3]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 109–110 — Durability:
+    Database Management Systems.pdf
+[2] Page 118 — 14. Transaction and Isolation Levels
+    Database Management Systems.pdf
+[3] Page 110 — Advantages of ACID Properties in DBMS:
+    Database Management Systems.pdf
+[4] Page 107 — 12. ACID Properties in DBMS
+    Database Management Systems.pdf
+[5] Page 109–110 — Durability:
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q05` — How is Atomicity enforced during system crashes or transaction aborts?
+- **Category:** ACID & Transactions | **Difficulty:** Medium | **Latency:** 27.24s
+
+#### 🎯 Ground Truth Summary
+> Atomicity is enforced through the Write-Ahead Logging (WAL) protocol and shadow paging. If a transaction aborts or crashes before committing, the recovery manager uses the log undo entries to roll back incomplete modifications.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Atomicity Enforcement:**
+
+**During System Crashes:**
+
+* The Recovery Manager ensures that the modifications done by committed transactions are reflected in the database [2].
+* The log information helps ensure that no modifications made by an aborted transaction persist in the database [2].
+* The Recovery Manager restores the changes made by a completed transaction from the log when the system restarts [4].
+
+**During Transaction Aborts:**
+
+* The transaction aborts, and all its actions have to be undone [1].
+* The modifications done by an aborted transaction should not be visible to the database [2].
+* The Recovery Manager ensures that the changes made by an aborted transaction are not visible [2].
+* The transaction is rolled back to its original state, ensuring data consistency and integrity [3].
+
+**Key Operations:**
+
+1. **Abort**: If a transaction aborts, changes made to the database are not visible [5].
+2. **Commit**: If a transaction commits, changes made are visible [5].
+
+**Example:**
+
+Consider the transaction T consisting of T1 and T2: Transfer of 100 from account X to account Y [5].
+If the transaction fails after completion of T1 but before completion of T2, the amount has been deducted from X but not added to Y, resulting in an inconsistent database state [5].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 561–562 — 18.6 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+[2] Page 114–115 — Log based recovery
+    Database Management Systems.pdf
+[3] Page 109–110 — Durability:
+    Database Management Systems.pdf
+[4] Page 550–551 — 18.2 TRANSACTIONS AND SCHEDULES
+    database management system 2nd ed.pdf
+[5] Page 107–108 — Atomicity:
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q06` — Explain the difference between conflict serializability and view serializability.
+- **Category:** ACID & Transactions | **Difficulty:** Hard | **Latency:** 27.24s
+
+#### 🎯 Ground Truth Summary
+> Conflict serializability means a schedule can be transformed into a serial schedule by swapping non-conflicting adjacent operations (checked via acyclic precedence graph). View serializability is broader: it requires that initial reads, final writes, and read-from dependencies match some serial schedule, allowing certain schedules with blind writes that are not conflict serializable.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Conflict Serializability vs View Serializability:**
+
+**Definition:**
+
+* Conflict serializability: A schedule is called conflict serializable if it can be transformed into a serial schedule by swapping non-conflicting operations [1].
+* View serializability: A schedule is called view serializable if it is view equal to a serial schedule (no overlapping transactions) [2].
+
+**Characteristics:**
+
+* Conflict serializability:
+ + Two operations are said to be conflicting if all conditions satisfy:
+  • They belong to different transactions
+  • They operate on the same data item
+  • At Least one of them is a write operation [2]
+* View serializability:
+ + No overlapping transactions [2]
+
+**Relationship between Conflict Serializability and View Serializability:**
+
+* A conflict schedule is a view serializable but if the serializability contains blind writes, then the view serializable does not conflict serializable [2].
+* Note that view serializability is a broader concept that includes conflict serializability [2].
+
+**Example:**
+
+* S1 schedule discussed above (which is conflict serializable) is equivalent to the serial schedule (T1->T2) [3].
+* S2 is not conflict serializable, but it is conflict equivalent to S21 and S22 because S2 can be converted to S21 and S22 by swapping non-conflicting operations [3].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 128 — Conflict Serializable
+    Database Management Systems.pdf
+[2] Page 122 — 3)Serializable:
+    Database Management Systems.pdf
+[3] Page 129–130 — Conflict Equivalent
+    Database Management Systems.pdf
+[4] Page 574–575 — 19.3.1 Dynamic Databases and the Phantom Problem
+    database management system 2nd ed.pdf
+[5] Page 563 — TransactionManagementOverview 539
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q07` — What is the Two-Phase Locking (2PL) protocol?
+- **Category:** Concurrency Control | **Difficulty:** Easy | **Latency:** 27.31s
+
+#### 🎯 Ground Truth Summary
+> A concurrency control protocol with two phases: Growing phase (transaction acquires locks but cannot release any) and Shrinking phase (transaction releases locks but cannot acquire any new ones). It guarantees conflict serializability.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Two-Phase Locking (2PL) Protocol:**
+
+**Definition:** Two-Phase Locking is a process used to gain ownership of shared resources without creating the possibility of deadlock [1].
+
+**Characteristics:**
+
+* Prevents deadlock from occurring in distributed systems by releasing all acquired resources if it's not possible to acquire all required resources without waiting [1].
+* Ensures serializability [4].
+* Comprises two phases: **Growing Phase** and **Shrinking Phase** [1, 2].
+
+**Phases:**
+
+1. **Growing Phase:**
+	* Acquire locks but cannot release any lock [1, 2].
+	* The point when a transaction acquires all the locks it needs is called the **Lock Point** [1].
+2. **Shrinking Phase:**
+	* Release locks but cannot acquire any new locks [1, 2].
+
+**Types of Locks:**
+
+* **Shared Lock (S(a))**: allows multiple transactions to read the data item [4].
+* **Exclusive Lock (X(a))**: allows only one transaction to read or write the data item [4].
+
+**Categories of Two-Phase Locking:**
+
+* **Strict 2-PL**: a transaction must acquire all locks before releasing any [3].
+* **Rigorous 2-PL**: not explicitly defined in the provided excerpts.
+* **Conservative 2-PL**: not explicitly defined in the provided excerpts.
+
+**Strict Two-Phase Locking (Strict 2PL):**
+
+* A transaction must acquire a lock before accessing a data object [5].
+* Locks can be shared (write-locks) [5].
+* All locks held by a transaction must be released before the transaction completes [5].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 141 — i) Two-Phase Locking Protocol:
+    Database Management Systems.pdf
+[2] Page 153 — Two Phase Locking
+    Database Management Systems.pdf
+[3] Page 154 — Categories of two-Phase Locking
+    Database Management Systems.pdf
+[4] Page 152 — 17. Two Phase Locking (2-PL)
+    Database Management Systems.pdf
+[5] Page 561–562 — 18.6 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q08` — Why does standard Two-Phase Locking (2PL) suffer from cascading aborts, and how does Strict 2PL prevent them?
+- **Category:** Concurrency Control | **Difficulty:** Medium | **Latency:** 26.46s
+
+#### 🎯 Ground Truth Summary
+> In standard 2PL, a transaction can release exclusive (write) locks before committing, allowing other transactions to read dirty data; if the first transaction aborts, readers must cascade abort. Strict 2PL prevents this by holding all exclusive locks until the transaction completes (commits or aborts).
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Cascading Aborts in 2PL:**
+
+* Standard Two-Phase Locking (2PL) suffers from cascading aborts [1].
+* Cascading aborts occur when a transaction is aborted, causing other transactions that depend on it to also be aborted [1].
+
+**Prevention by Strict 2PL:**
+
+* Strict 2PL ensures that all Exclusive (X) locks held by a transaction are released until after the transaction commits [2].
+* This modification prevents cascading aborts by ensuring that the schedule is **recoverable** and **cascadeless** [2].
+* Strict 2PL guarantees that the schedule is strict, in addition to being conflict serializable [4].
+* This is because when a transaction writes an object under Strict 2PL, it holds the (exclusive) lock until it commits or aborts, preventing other transactions from seeing or modifying the object until it is complete [4].
+
+**Key Benefits of Strict 2PL:**
+
+* Ensures that the schedule is recoverable and cascadeless [2].
+* Guarantees strict schedules [4].
+* Prevents cascading aborts [2].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 154 — Categories of two-Phase Locking
+    Database Management Systems.pdf
+[2] Page 154 — Strict 2-PL –
+    Database Management Systems.pdf
+[3] Page 154 — Rigorous 2-PL –
+    Database Management Systems.pdf
+[4] Page 566–567 — (c)
+    database management system 2nd ed.pdf
+[5] Page 556–557 — 18.4.1 Strict Two-Phase Locking (Strict 2PL)
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q09` — What is a deadlock in a DBMS, and what are the two primary techniques to handle it?
+- **Category:** Concurrency Control | **Difficulty:** Medium | **Latency:** 26.62s
+
+#### 🎯 Ground Truth Summary
+> A deadlock is a cycle of transactions waiting for locks held by one another where no transaction can proceed. Two techniques: Deadlock Prevention (using timestamp schemes like Wait-Die or Wound-Wait) and Deadlock Detection (building a wait-for graph and aborting/rolling back a victim transaction when a cycle is detected).
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Deadlock Definition:**
+
+A deadlock is an unwanted situation in which two or more transactions are waiting indefinitely for one another to give up locks. [4]
+
+**Causes of Deadlock:**
+
+* Two or more transactions are waiting for each other to release resources, such as locks on database objects.
+* Transactions are running concurrently and try to access the same data in a different order. [1]
+
+**Handling Deadlocks:**
+
+There are two primary techniques to handle deadlocks:
+
+**1. Deadlock Prevention:**
+
+* Use techniques such as timeout mechanisms, where a transaction is forced to release its locks after a certain period of time.
+* Deadlock detection algorithms, which periodically scan the transaction log for deadlock cycles and then choose a transaction to abort to resolve the deadlock. [1]
+* Use schemes such as:
+	+ Timeout-based schemes: Transactions are allowed to hold a lock for a limited time. If a transaction exceeds its allotted time, it is rolled back, allowing other transactions to proceed.
+	+ Wait-die schemes: If a transaction requests a lock held by another transaction, the requesting transaction waits if its timestamp is older than the timestamp of the transaction holding the lock. If the timestamp of the requesting transaction is newer, it rolls back and is restarted with a new timestamp.
+	+ Wound-wait schemes: If a transaction requests a lock held by another transaction, the requesting transaction is granted the lock if its timestamp is newer than the timestamp of the transaction holding the lock. If the timestamp of the requesting transaction is older, the transaction holding the lock is rolled back and restarted with a new timestamp. [2]
+
+**2. Deadlock Detection and Resolution:**
+
+* Use techniques such as:
+	+ Wait-for-graph: A graph is drawn based on the transaction and its lock on the resource. If the graph created has a closed loop or a cycle, then there is a deadlock. [3]
+	+ Deadlock detection algorithms, which periodically scan the transaction log for deadlock cycles and then choose a transaction to abort to resolve the deadlock. [1]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 143–145 — DEADLOCK
+    Database Management Systems.pdf
+[2] Page 159–161 — Timestamp and Deadlock Prevention schemes
+    Database Management Systems.pdf
+[3] Page 143–145 — DEADLOCK
+    Database Management Systems.pdf
+[4] Page 143–145 — DEADLOCK
+    Database Management Systems.pdf
+[5] Page 159–161 — Timestamp and Deadlock Prevention schemes
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q10` — What is the purpose of Write-Ahead Logging (WAL) in database recovery?
+- **Category:** Crash Recovery | **Difficulty:** Medium | **Latency:** 26.11s
+
+#### 🎯 Ground Truth Summary
+> WAL mandates that any log record describing a modification to a database page must be flushed to stable storage (disk) before the actual modified data page is written to disk. This ensures Atomicity (via Undo) and Durability (via Redo).
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Write-Ahead Logging (WAL) Purpose:**
+
+The primary purpose of Write-Ahead Logging (WAL) in database recovery is to ensure **durability** and **data integrity** [2]. WAL achieves this by:
+
+* **Forcing log records to stable storage** before writing a page to disk [5]
+* **Maintaining a sequential log file** with all writes to the log being sequential [5]
+* **Ensuring that all transactions are correctly committed or canceled** before they are written to the database [2]
+
+**Benefits of WAL:**
+
+* **Durability**: Guarantees that no committed transaction is lost in the event of a system crash [2]
+* **Faster Recovery**: Allows for faster recovery by replaying committed transactions from the log file [2]
+* **Incremental Backup**: Enables incremental backups by keeping only the changes made since the last backup in the log file [2]
+* **Lowers the Risk of Data Corruption**: Ensures that all transactions are correctly committed or canceled before they are written to the database [2]
+
+**WAL Protocol:**
+
+The WAL protocol involves:
+
+1. **Writing log records** for updates, commits, aborts, and other transaction operations [4]
+2. **Forcing log records to stable storage** before writing a page to disk [5]
+3. **Maintaining a sequential log file** with all writes to the log being sequential [5]
+
+**Types of WAL:**
+
+There are various types of WAL, including:
+
+1. **ARIES**: A popular recovery algorithm that uses a write-ahead log protocol [1]
+2. **Shadow Paging**: A recovery technique that makes changes to copies of data pages, or shadow pages [1]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 612 — 20.5 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+[2] Page 116 — Advantages of Log based Recovery
+    Database Management Systems.pdf
+[3] Page 111 — Types of Recovery Techniques in DBMS
+    Database Management Systems.pdf
+[4] Page 112–113 — Database Systems
+    Database Management Systems.pdf
+[5] Page 601–602 — 20.1.3 The Write-Ahead Log Protocol
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q11` — What are the three main passes of the ARIES crash recovery algorithm?
+- **Category:** Crash Recovery | **Difficulty:** Hard | **Latency:** 26.44s
+
+#### 🎯 Ground Truth Summary
+> 1. Analysis pass: scans forward from the last checkpoint to identify active transactions and dirty pages at the time of crash. 2. Redo pass: scans forward from the smallest recovery LSN to repeat all logged history (repeating history to restore state at crash). 3. Undo pass: scans backward to reverse all actions of transactions that were active (uncommitted) at crash time.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**ARIES Crash Recovery Algorithm**
+
+The ARIES crash recovery algorithm involves three main phases: Analysis, Redo, and Undo.
+
+**Three Main Phases:**
+
+1. **Analysis Phase**
+ * Identifies dirty buffers and transactions at the time of the crash [3]
+ * Determines the state of the database at the time of the crash [3]
+2. **Redo Phase**
+ * Repeats history by transforming the database to its state at the time of the crash [3]
+ * Replays the actions of all transactions, not just the non-losers [5]
+3. **Undo Phase**
+ * Undoes the actions of transactions that did not commit [4]
+ * Restores the database to a consistent state [4]
+
+Note: The Redo phase repeats history by transforming the database to its state at the time of the crash, and the Undo phase undoes the actions of transactions that did not commit.
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 561 — 18.5.3 Overview of ARIES
+    database management system 2nd ed.pdf
+[2] Page 596–597 — CRASH, RESTART
+    database management system 2nd ed.pdf
+[3] Page 612 — 20.5 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+[4] Page 561–562 — 18.6 POINTS TO REVIEW
+    database management system 2nd ed.pdf
+[5] Page 611–612 — CONCURRENCY CONTROL
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q12` — What is the difference between a Steal/No-Force buffer management policy versus No-Steal/Force?
+- **Category:** Crash Recovery | **Difficulty:** Medium | **Latency:** 27.0s
+
+#### 🎯 Ground Truth Summary
+> Steal allows the buffer pool to flush dirty pages of uncommitted transactions to disk (requiring Undo logging for rollback). No-Force does not require dirty pages of committed transactions to be immediately flushed to disk upon commit (requiring Redo logging for durability). Steal/No-Force gives the highest performance and is used by almost all commercial DBMS engines.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Buffer Management Policies: Steal/No-Force vs. No-Steal/Force**
+
+**Characteristics:**
+
+* **Steal/No-Force**:
+ + Steals a page from the buffer pool when a page fault occurs [1].
+ + Does not force modified pages to disk when a transaction commits [1].
+ + Uses a log to record changes made to the database [1].
+* **No-Steal/Force**:
+ + Does not steal pages from the buffer pool when a page fault occurs [1].
+ + Forces modified pages to disk when a transaction commits [1].
+
+**Advantages and Disadvantages:**
+
+* **Steal/No-Force**:
+ + Reduces I/O costs by not forcing modified pages to disk [3].
+ + Allows for faster transaction commit times [3].
+ + Uses a log to record changes made to the database [1].
+* **No-Steal/Force**:
+ + Ensures that all changes made by a transaction are immediately forced to disk [4].
+ + Guarantees that a transaction's changes are not lost in case of a crash [4].
+
+**Comparison:**
+
+| Policy | Steal/No-Force | No-Steal/Force |
+| --- | --- | --- |
+| Stealing | Yes | No |
+| Forcing | No | Yes |
+| Log | Yes | Not mentioned |
+| I/O Costs | Reduced | Increased |
+| Transaction Commit Time | Faster | Slower |
+
+Note: The excerpts do not provide a direct comparison of the two policies, but rather describe their characteristics and advantages. The comparison table is based on the information provided in the excerpts.
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 560–561 — 18.5.2 Recovery-Related Steps during Normal Execution
+    database management system 2nd ed.pdf
+[2] Page 561 — 18.5.3 Overview of ARIES
+    database management system 2nd ed.pdf
+[3] Page 559–560 — 18.5.1 Stealing Frames and Forcing Pages
+    database management system 2nd ed.pdf
+[4] Page 562 — EXERCISES
+    database management system 2nd ed.pdf
+[5] Page 43–44 — Data Files
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q13` — What is a B+ Tree index and why is it preferred over a standard binary search tree for database storage?
+- **Category:** Indexing & Trees | **Difficulty:** Easy | **Latency:** 27.04s
+
+#### 🎯 Ground Truth Summary
+> A B+ Tree is a self-balancing multi-way search tree where data pointers are stored exclusively at leaf nodes and leaf nodes are linked sequentially. It minimizes disk I/O because its high branching factor (wide fan-out) reduces tree height, and the linked leaves allow blazing-fast range scans.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Definition:**
+A **B+ Tree** is a self-balancing tree that is particularly well-suited for storage systems with slow, bulky data access [4]. It is a type of **multilevel indexing** that minimizes I/O operations while facilitating efficient disk access [1].
+
+**Characteristics:**
+
+* Stores data pointers only at the **leaf nodes** of the tree [2]
+* Leaf nodes store all key values along with their corresponding data pointers [2]
+* Leaf nodes are linked to provide ordered access to records [2]
+* Internal nodes form the other levels of a multilevel index [2]
+* Some key values of the leaf nodes also appear in the internal nodes to control searching [2]
+
+**Advantages over Standard Binary Search Trees:**
+
+* Can handle massive amounts of data with ease [4]
+* Has a large number of keys that can be stored in a single node, resulting in a larger branching factor and a shallower height [4]
+* Maintains balance by ensuring that each node has a minimum number of keys, guaranteeing O(log n) time complexity for operations [4]
+* Minimizes I/O operations while facilitating efficient disk access [1]
+
+**Why Preferred for Database Storage:**
+
+* Suitable for storage systems with slow, bulky data access [4]
+* Reduces search time and increases performance [1]
+* Facilitates effective range-based queries [1]
+
+**Comparison with ISAM Indexes:**
+
+* ISAM indexes have static index levels, which can lead to hotspots and poor performance [5]
+* B+ Tree indexes are preferred over ISAM indexes due to their ability to handle frequent insertions and maintain balance [5]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 175 — Why Use B+ Tree?
+    Database Management Systems.pdf
+[2] Page 175–176 — Implementation of B+ Tree
+    Database Management Systems.pdf
+[3] Page 170 — Applications of B-Trees:
+    Database Management Systems.pdf
+[4] Page 168 — 19.3.All about B-Tree
+    Database Management Systems.pdf
+[5] Page 508–509 — 16.10 IMPACT OF CONCURRENCY *
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q14` — What happens when a leaf node overflows during insertion into a B+ Tree?
+- **Category:** Indexing & Trees | **Difficulty:** Hard | **Latency:** 26.58s
+
+#### 🎯 Ground Truth Summary
+> When a leaf node exceeds maximum capacity during insertion, it splits into two leaf nodes. The first d records stay in the left leaf, the remaining records move to the right leaf, and the smallest key of the new right leaf is copied up (promoted) into the parent internal node. If the parent also overflows, it splits recursively.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Leaf Node Overflow During Insertion:**
+
+When a leaf node overflows during insertion into a **B+ Tree**, the following steps occur:
+
+**Case 1: Overflow in Leaf Node**
+
+* The leaf node is split into two nodes [2].
+* The first node contains **ceil((m-1)/2)** values [2].
+* The second node contains the remaining values [2].
+* The smallest search key value from the second node is copied to the parent node (right biased) [2].
+
+**Example:**
+
+* Inserting 8 into a B+ Tree of order 5 [2].
+
+**Illustration:**
+
+* Figure 43: Insertion in B+ Tree [2].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 177 — Insertion in B+ Tree
+    Database Management Systems.pdf
+[2] Page 177–178 — Properties for insertion B+ Tree
+    Database Management Systems.pdf
+[3] Page 177 — Steps for insertion in B+ Tree
+    Database Management Systems.pdf
+[4] Page 173 — Deletion Process in B-Trees
+    Database Management Systems.pdf
+[5] Page 277–278 — 9.2 B+ TREES: A DYNAMIC INDEX STRUCTURE
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q15` — What is the difference between a clustered index and an unclustered (secondary) index?
+- **Category:** Indexing & Trees | **Difficulty:** Medium | **Latency:** 26.93s
+
+#### 🎯 Ground Truth Summary
+> A clustered index determines the exact physical ordering of data records on disk (so there can be at most one clustered index per table). An unclustered index maintains an ordered tree of index keys where leaf entries point to data records stored elsewhere, requiring extra disk jumps for non-index-only queries.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Clustered vs Unclustered Indexes:**
+
+A **clustered index** is a type of indexing that establishes a physical sorting order of rows [2]. On the other hand, an **unclustered (secondary) index** is an index structure separate from the data stored in a table that reorders one or more selected columns [1].
+
+**Characteristics:**
+
+* **Clustered Index:**
+ + Establishes a physical sorting order of rows [2]
+ + No separate index storage [3]
+ + Offers faster data access [3]
+* **Unclustered (Secondary) Index:**
+ + Separate index storage for the index [3]
+ + Slower data access compared to clustered index [3]
+ + Provides a list of virtual pointers or references to the location where the data is stored [4]
+
+**Types of Indexes:**
+
+1. **Clustered Index**
+2. **Unclustered (Secondary) Index**
+
+**Example:**
+
+* Clustered Index: A dictionary where the sorting order is alphabetical [2]
+* Unclustered Index: A textbook with a separate index page at the beginning [1]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 97 — Non-Clustered Index
+    Database Management Systems.pdf
+[2] Page 96 — Clustered Index
+    Database Management Systems.pdf
+[3] Page 98 — Clustered vs Non-Clustered Index
+    Database Management Systems.pdf
+[4] Page 86–87 — Hash File Organization
+    Database Management Systems.pdf
+[5] Page 6 — 8 FILE ORGANIZATIONS AND INDEXES
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q16` — What is the difference between the SQL WHERE clause and the HAVING clause?
+- **Category:** Relational Algebra & SQL | **Difficulty:** Easy | **Latency:** 26.96s
+
+#### 🎯 Ground Truth Summary
+> The WHERE clause filters individual rows before grouping occurs (cannot check aggregate functions). The HAVING clause filters grouped rows or aggregate results after the GROUP BY operation has completed.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Difference between SQL WHERE and HAVING Clauses:**
+
+The main difference between the SQL **WHERE** clause and the **HAVING** clause is their functionality and the type of data they operate on.
+
+**WHERE Clause:**
+
+* Works on row's data, not on aggregated data [1]
+* Cannot be used with aggregates [1]
+* Acts as a pre-filter [2]
+* Works on individual rows, selecting data row by row basis [4]
+
+**HAVING Clause:**
+
+* Works on aggregated data [1]
+* Can be used with aggregates [1]
+* Acts as a post-filter [2]
+* Works on grouped data, filtering the results after aggregation [4]
+
+**Key Characteristics:**
+
+* **WHERE** clause filters individual rows
+* **HAVING** clause filters grouped data
+* **WHERE** clause is used before **GROUP BY**, while **HAVING** clause is used after **GROUP BY** [2]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 81 — 10.3.Clause in SQL Having vs. Where Clause
+    Database Management Systems.pdf
+[2] Page 81 — 10.3.Clause in SQL Having vs. Where Clause
+    Database Management Systems.pdf
+[3] Page 156–158 — 5.4.1 Introduction to Nested Queries
+    database management system 2nd ed.pdf
+[4] Page 81 — 10.3.Clause in SQL Having vs. Where Clause
+    Database Management Systems.pdf
+[5] Page 81 — 10.3.Clause in SQL Having vs. Where Clause
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q17` — Explain the difference between an INNER JOIN and a LEFT OUTER JOIN in SQL.
+- **Category:** Relational Algebra & SQL | **Difficulty:** Medium | **Latency:** 26.96s
+
+#### 🎯 Ground Truth Summary
+> An INNER JOIN returns only rows that satisfy the join condition across both tables. A LEFT OUTER JOIN returns all rows from the left table, along with matching rows from the right table; if no match exists, NULL values are padded for the right table's columns.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Inner Join vs Left Outer Join:**
+
+**Definition:**
+
+* **Inner Join**: Selects all rows from both tables where the condition is satisfied. [5]
+* **Left Outer Join**: Returns all rows from the left table and matching rows from the right table. For rows without a match, the result-set contains null. [2]
+
+**Characteristics:**
+
+* **Inner Join**:
+ + Returns only matching rows from both tables.
+ + Does not include rows without a match.
+* **Left Outer Join**:
+ + Returns all rows from the left table.
+ + Returns matching rows from the right table.
+ + Fills non-matching rows with null values.
+
+**Types of Joins:**
+
+1. **INNER JOIN** [5]
+2. **LEFT OUTER JOIN** [2]
+
+**Comparison:**
+
+|  | Inner Join | Left Outer Join |
+| --- | --- | --- |
+| **Returns** | Matching rows from both tables | All rows from left table, matching rows from right table |
+| **Non-matching rows** | Not included | Filled with null values |
+
+**Example:**
+
+* Inner Join: `SELECT * FROM STUDENT INNER JOIN STUDENT_SPORTS ON STUDENT.ROLL_NO = STUDENT_SPORTS.ROLL_NO` [1]
+* Left Outer Join: `SELECT * FROM STUDENT LEFT JOIN EMPLOYEE ON STUDENT.ROLL_NO > EMPLOYEE.EMP_NO` [1]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 47–48 — STUDENT_SPORTS.SPORTS)(? (STUDENT.ROLL_NO=STUDENT_SPORTS.ROLL_NO)
+    Database Management Systems.pdf
+[2] Page 77 — ii) LEFT JOIN
+    Database Management Systems.pdf
+[3] Page 76 — 10.2.SQL | Join
+    Database Management Systems.pdf
+[4] Page 78 — Syntax:
+    Database Management Systems.pdf
+[5] Page 76–77 — i) INNER JOIN
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q18` — In relational algebra, what is the difference between Selection (σ) and Projection (π)?
+- **Category:** Relational Algebra & SQL | **Difficulty:** Hard | **Latency:** 26.53s
+
+#### 🎯 Ground Truth Summary
+> Selection (σ) is a unary operation that filters tuples (rows) based on a boolean predicate. Projection (π) is a unary operation that extracts specific attributes (columns) from a relation while eliminating duplicate rows.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Selection (σ) vs Projection (π)**
+
+**Definition:**
+
+* **Selection (σ)**: Evaluates to the relation that contains only the tuples that satisfy a given condition [2].
+* **Projection (π)**: Evaluates to the relation that contains only the attributes specified in the projection [2].
+
+**Characteristics:**
+
+* **Selection (σ)**:
+ + Evaluates to a relation with the same attributes as the original relation [2].
+ + The selection condition is applied to the entire relation [2].
+* **Projection (π)**:
+ + Evaluates to a relation with only the specified attributes [2].
+ + The projection is applied to the entire relation [2].
+
+**Types of Operations:**
+
+* **Selection (σ)**: Can be used to filter out tuples based on a condition [2].
+* **Projection (π)**: Can be used to select only specific attributes from a relation [2].
+
+**Example:**
+
+* **Selection (σ)**: πsname,rating(σrating>8(S2)) [2]
+ + Evaluates to the relation shown in Figure 4.7.
+* **Projection (π)**: πage(S2) [2]
+ + Evaluates to the relation shown in Figure 4.6.
+
+**Commutation Rules:**
+
+* **Selection (σ) and Projection (π)**: Can be commuted in certain cases [1].
+ + πa(R × S) ≡ πa1(R) × πa2(S) [1]
+ + πa(R ◃▹cS) ≡ πa1(R) ◃▹cπa2(S) [1]
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 409–411 — 14.3.4 Selects, Projects, and Joins
+    database management system 2nd ed.pdf
+[2] Page 117–118 — 4.2.1 Selection and Projection
+    database management system 2nd ed.pdf
+[3] Page 116–117 — 4.2 RELATIONAL ALGEBRA
+    database management system 2nd ed.pdf
+[4] Page 117 — 4.2.1 Selection and Projection
+    database management system 2nd ed.pdf
+[5] Page 126–130 — 4.2.6 More Examples of Relational Algebra Queries
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q19` — What is a primary key versus a foreign key in a relational database?
+- **Category:** Schema & Architecture | **Difficulty:** Easy | **Latency:** 26.99s
+
+#### 🎯 Ground Truth Summary
+> A primary key uniquely identifies each record within a table and cannot contain NULL values. A foreign key is a column (or set of columns) that references the primary key of another table, establishing a referential integrity link across tables.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**Primary Key vs. Foreign Key:**
+
+**Definition:**
+
+* A **primary key** is a unique identifier for each row in a table, ensuring that each row is unique and can be accessed and manipulated easily [1].
+* A **foreign key** is used to link tables together and enforce referential integrity, ensuring that data in one table is consistent with data in another table [1].
+
+**Characteristics:**
+
+* Primary Key:
+ + Ensures uniqueness of each row in a table [1]
+ + Can be used to access and manipulate rows easily [1]
+* Foreign Key:
+ + Links tables together [1]
+ + Enforces referential integrity [1]
+
+**Types:**
+
+* **Primary Key**:
+ 1. Unique identifier for each row in a table
+ 2. Ensures data consistency and integrity
+* **Foreign Key**:
+ 1. Used to link tables together
+ 2. Enforces referential integrity between tables
+
+**Example:**
+
+* In the **Students** table, **sid** is the primary key, ensuring that each student has a unique identifier [3].
+* In the **Enrolled** table, **sid** is a foreign key referencing the primary key in the **Students** table, ensuring that only valid student IDs can be enrolled in courses [4].
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 34 — 8.1.Coddy Rule and it’s Features
+    Database Management Systems.pdf
+[2] Page 41 — Advantages Anomalies in Relational Model
+    Database Management Systems.pdf
+[3] Page 85 — 3.2.3 General Constraints
+    database management system 2nd ed.pdf
+[4] Page 83–84 — 3.2.2 Foreign Key Constraints
+    database management system 2nd ed.pdf
+[5] Page 93–95 — 3.5.3 Translating Relationship Sets with Key Constraints
+    database management system 2nd ed.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q20` — What are the three levels of the ANSI-SPARC database architecture?
+- **Category:** Schema & Architecture | **Difficulty:** Medium | **Latency:** 26.54s
+
+#### 🎯 Ground Truth Summary
+> 1. External / View level (user views customized for applications). 2. Conceptual / Logical level (global schema describing what data is stored and relationships without physical details). 3. Internal / Physical level (low-level storage structures, file organizations, and indexes on disk).
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+**ANSI-SPARC Database Architecture**
+
+The ANSI-SPARC database architecture is not explicitly mentioned in the provided excerpts. However, it is mentioned in the bibliographic notes that the three levels of abstraction were introduced in [15].
+
+**Three Levels of Abstraction:**
+
+Unfortunately, the excerpts do not provide information on the three levels of abstraction. However, we can infer that the three levels of abstraction are mentioned in [15].
+
+**Possible Levels of Abstraction:**
+
+Unfortunately, the excerpts do not provide enough information to determine the three levels of abstraction.
+```
+
+#### 📚 Retrieved Citations
+```text
+--- Sources ---
+[1] Page 6–7 — Advantages of 2-Tier Architecture
+    Database Management Systems.pdf
+[2] Page 7 — 3-Tier Architecture
+    Database Management Systems.pdf
+[3] Page 5–6 — Types of DBMS Architecture
+    Database Management Systems.pdf
+[4] Page 47 — BIBLIOGRAPHIC NOTES
+    database management system 2nd ed.pdf
+[5] Page 7 — Advantages of 3-Tier Architecture
+    Database Management Systems.pdf
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q21` — How do I bake a chocolate cake from scratch?
+- **Category:** Out-of-Scope (Guardrail Check) | **Difficulty:** Guardrail | **Latency:** 26.28s
+
+#### 🎯 Ground Truth Summary
+> [GUARDRAIL REFUSAL EXPECTED] This query is completely outside the domain of Database Management Systems and should be cleanly rejected by VaultMind's safety guardrails without fabricating an answer.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+[GUARDRAIL REFUSAL] I couldn't find relevant information about this topic in the DBMS textbook. VaultMind is designed to answer questions about Database Management Systems.
+
+Try rephrasing your question, or check that it's related to topics like SQL, normalization, transactions, indexing, ER models, or relational algebra.
+
+(Relevance score: -11.03 — threshold: -2.00)
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+
+### `q22` — Can you explain the offside rule in football?
+- **Category:** Out-of-Scope (Guardrail Check) | **Difficulty:** Guardrail | **Latency:** 25.72s
+
+#### 🎯 Ground Truth Summary
+> [GUARDRAIL REFUSAL EXPECTED] This query is completely outside the domain of Database Management Systems and should be cleanly rejected by VaultMind's safety guardrails without fabricating an answer.
+
+#### 🤖 VaultMind Generated Answer
+```markdown
+[GUARDRAIL REFUSAL] I couldn't find relevant information about this topic in the DBMS textbook. VaultMind is designed to answer questions about Database Management Systems.
+
+Try rephrasing your question, or check that it's related to topics like SQL, normalization, transactions, indexing, ER models, or relational algebra.
+
+(Relevance score: -8.07 — threshold: -2.00)
+```
+
+#### ✍️ Scores (`1-5`):
+- **Correctness:** ______ / 5
+- **Citation Precision:** ______ / 5
+- **Completeness:** ______ / 5
+- **Evaluator Notes:** _________________________________________
+
+---
+

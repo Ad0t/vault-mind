@@ -22,6 +22,7 @@ except ImportError:
     pass
 
 import streamlit as st
+import streamlit.components.v1 as _st_components
 from streamlit.runtime import exists as _st_runtime_exists
 
 # Auto-relaunch via `streamlit run` if executed directly with `python app.py`
@@ -64,6 +65,11 @@ html, body, [class*="css"]  { font-family: 'Inter', sans-serif !important; }
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span { color: #e2e8f0 !important; }
 
+/* ── Sidebar: hide only the CLOSE button so users can't collapse it ── */
+/* collapsedControl (the reopen arrow) is intentionally kept visible   */
+/* in case the browser has a cached collapsed state on first load.     */
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+
 /* ── Main header ── */
 .vm-header { text-align: center; padding: 1.5rem 0 0.5rem 0; }
 .vm-header h1 {
@@ -91,37 +97,52 @@ html, body, [class*="css"]  { font-family: 'Inter', sans-serif !important; }
     vertical-align: top;
     color: #cbd5e1;
 }
-/* ── Sidebar reopen floating button ── */
-/* Streamlit renders a small arrow when the sidebar is collapsed.
-   We restyle it into a prominent glowing FAB so it's impossible to miss. */
-[data-testid="collapsedControl"] {
-    position: fixed !important;
-    top: 50% !important;
-    left: 0 !important;
-    transform: translateY(-50%) !important;
-    width: 36px !important;
-    height: 56px !important;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-    border-radius: 0 12px 12px 0 !important;
-    box-shadow: 3px 0 16px rgba(99, 102, 241, 0.55) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    transition: width 0.2s ease, box-shadow 0.2s ease !important;
-    z-index: 999 !important;
-}
-[data-testid="collapsedControl"]:hover {
-    width: 44px !important;
-    box-shadow: 4px 0 22px rgba(99, 102, 241, 0.75) !important;
-}
-[data-testid="collapsedControl"] svg {
-    fill: #ffffff !important;
-    width: 18px !important;
-    height: 18px !important;
-}
+.compare-table tr:nth-child(even) td { background: #1a1a2e; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Force sidebar open — clears cached collapsed state and forces DOM open ──
+_st_components.html("""
+<script>
+(function() {
+    var parent = window.parent;
+    var pdoc   = parent.document;
+    var pstore = parent.localStorage;
+
+    // Strategy 1: clear any Streamlit localStorage keys that store sidebar state.
+    // Only do this once per browser session to avoid a reload loop.
+    if (!parent.sessionStorage.getItem('vm_sb_fixed')) {
+        parent.sessionStorage.setItem('vm_sb_fixed', '1');
+        try {
+            Object.keys(pstore).forEach(function(k) {
+                if (k.toLowerCase().indexOf('sidebar') !== -1 ||
+                    k.toLowerCase().indexOf('collapse') !== -1) {
+                    pstore.removeItem(k);
+                }
+            });
+        } catch(e) {}
+    }
+
+    // Strategy 2: directly force the sidebar element visible via inline style.
+    function forceVisible() {
+        var sb = pdoc.querySelector('[data-testid="stSidebar"]');
+        if (sb) {
+            sb.style.setProperty('display',    'block',   'important');
+            sb.style.setProperty('visibility', 'visible', 'important');
+            sb.style.setProperty('transform',  'none',    'important');
+        }
+        // Strategy 3: also try clicking the expand toggle as a fallback.
+        var btn = pdoc.querySelector('[data-testid="collapsedControl"]');
+        if (btn) btn.click();
+    }
+
+    // Run immediately, then again after Streamlit finishes rendering.
+    forceVisible();
+    setTimeout(forceVisible, 300);
+    setTimeout(forceVisible, 800);
+})();
+</script>
+""", height=0)
 
 # ── Session-state defaults ─────────────────────────────────────────────────────
 _DEFAULTS: dict = {
