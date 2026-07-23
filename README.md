@@ -14,7 +14,7 @@
 
 ### Live Web Application
 Try the live interactive web application hosted on Streamlit Cloud:
-👉 **[Launch VaultMind Live App](https://vault-mind-ysj2lx5petec4frsyax4up.streamlit.app)** *(Note: Replace with your deployed URL if hosted elsewhere)*
+👉 **[Launch VaultMind Live App](https://vault-mind-ysj2lx5petec4frsyax4up.streamlit.app)** 
 
 ---
 
