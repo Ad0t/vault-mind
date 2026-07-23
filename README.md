@@ -79,7 +79,7 @@ Traditional Retrieval-Augmented Generation (RAG) systems fail when deployed on d
 | Component | Technology / Library | Rationale & Role |
 | :--- | :--- | :--- |
 | **Interactive UI** | **Streamlit (`streamlit>=1.41.0`)** | Responsive two-screen interface with permanent fixed sidebar, dynamic active-source selection, expandable citations, and side-by-side comparison tables. |
-| **PDF Ingestion & OCR** | **PyMuPDF (`fitz`) + `pdfplumber`** | Dual-engine extraction: `fitz` for rapid block heading hierarchies and `pdfplumber` for table bounding-box preservation and kerning anomaly reconstruction. |
+| **PDF Ingestion** | **PyMuPDF (`fitz`) + `pdfplumber`** | Dual-engine extraction: `fitz` for rapid block heading hierarchies and `pdfplumber` for table bounding-box preservation and kerning anomaly reconstruction. |
 | **Section Chunking** | **Custom Hierarchical Chunker (`src/chunk.py`)** | Splits text along semantic heading boundaries (`# Section Header`) while attaching exact page numbers, heading levels, and document provenance to every chunk. |
 | **Dense Embeddings** | **`BAAI/bge-small-en-v1.5` (`sentence-transformers`)** | State-of-the-art compact dense representation (384 dimensions) optimized for retrieval benchmarks. |
 | **Vector Database** | **ChromaDB (`chromadb`)** | Embedded persistent vector storage (`vector_store/`) supporting deterministic MD5 chunk IDs and zero-copy local search. |
