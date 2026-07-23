@@ -23,14 +23,6 @@ except ImportError:
 
 import streamlit as st
 import streamlit.components.v1 as _st_components
-from streamlit.runtime import exists as _st_runtime_exists
-
-# Auto-relaunch via `streamlit run` if executed directly with `python app.py`
-if not _st_runtime_exists():
-    import subprocess
-    print("⚡ Launching VaultMind via 'streamlit run'...")
-    subprocess.run([sys.executable, "-m", "streamlit", "run", __file__] + sys.argv[1:])
-    sys.exit(0)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 RAW_DIR       = ROOT / "data" / "raw"
